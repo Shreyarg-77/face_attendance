@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Records - Attendance System{% endblock %}
+{% block content %}
+<h3 class="text-center mb-4"><i class="fas fa-calendar-check"></i> Attendance Records</h3>
+<div class="card mb-4">
+    <div class="card-header">
+        <button class="btn btn-link text-decoration-none w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#filterForm">
+            <h5 class="mb-0"><i class="fas fa-filter"></i> Filter Records</h5>
+        </button>
+    </div>
+    <div class="collapse show" id="filterForm">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4 col-12">
+                    <label for="view" class="form-label"><i class="fas fa-eye"></i> View Type</label>
+                    <select name="view" class="form-select" id="view">
+                        <option value="today" {% if request.args.get('view') == 'today' %}selected{% endif %}>Today</option>
+                        <option value="date" {% if request.args.get('view') == 'date' %}selected{% endif %}>Specific Date</option>
+                        <option value="history" {% if request.args.get('view') == 'history' %}selected{% endif %}>History</option>
+                    </select>
+                </div>
+                <div class="col-md-4 col-12">
+                    <label for="date" class="form-label"><i class="fas fa-calendar"></i> Date</label>
+                    <input type="date" name="date" class="form-control" id="date" value="{{ request.args.get('date', '') }}">
+                </div>
+                <div class="col-md-4 col-12">
+                    <label for="name" class="form-label"><i class="fas fa-search"></i> Search Name</label>
+                    <input type="text" name="name" class="form-control" id="name" value="{{ request.args.get('name', '') }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary mobile-full"><i class="fas fa-search"></i> Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-list"></i> Records</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-id-badge"></i> ID</th>
+                        <th><i class="fas fa-user"></i> Name</th>
+                        <th><i class="fas fa-calendar"></i> Date</th>
+                        <th><i class="fas fa-clock"></i> Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>{{ record[0] }}</td>
+                        <td>{{ record[1] }}</td>
+                        <td>{{ record[2] }}</td>
+                        <td>{{ record[3] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if records|length == 0 %}
+        <p class="text-muted text-center"><i class="fas fa-info-circle"></i> No records found.</p>
+        {% endif %}
+    </div>
+</div>
+<!-- Moved Buttons Outside the Card for Visibility -->
+<div class="mt-4 text-center">
+    <h5 class="mb-3"><i class="fas fa-tools"></i> Actions</h5>
+    <div class="mobile-stack d-inline-flex flex-wrap justify-content-center">
+        <a href="{{ url_for('export_attendance_csv') }}" class="btn btn-success btn-lg me-3 mb-2"><i class="fas fa-download"></i> Export CSV</a>
+        <button class="btn btn-info btn-lg mb-2" onclick="sendEmail()"><i class="fas fa-envelope"></i> Send Email</button>
+    </div>
+</div>
+<script>
+    function sendEmail() {
+        fetch('{{ url_for("send_attendance_mail") }}', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => alert(data.message))
+            .catch(err => alert('Error sending email.'));
+    }
+</script>
