@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Enroll Face - {{ student_name }} - Attendance System{% endblock %}
+{% block content %}
+<div class="text-center">
+    <h3 class="mb-4"><i class="fas fa-camera"></i> Enroll Face for {{ student_name }}</h3>
+    <p class="text-muted mb-4">Position your face in the camera and click "Capture" to enroll.</p>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <video id="video" width="640" height="480" autoplay style="border: 2px solid #007bff; border-radius: 10px; max-width: 100%;"></video>
+            <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+            
+            <div class="mt-3 mobile-stack">
+                <button id="captureBtn" class="btn btn-primary me-2" onclick="captureFace()"><i class="fas fa-camera"></i> Capture</button>
+                <a href="{{ url_for('students') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back to Students</a>
+            </div>
+            
+            <div id="status" class="alert alert-info mt-3"><i class="fas fa-info-circle"></i> Initializing camera...</div>
+        </div>
+    </div>
+</div>
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const statusEl = document.getElementById('status');
+    let stream = null;
+    
+    // Start camera on page load
+    async function startCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Camera active. Click "Capture" to enroll.';
+        } catch (err) {
+            console.error('Camera error:', err);
+            statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Camera access denied or not supported. Please allow camera permissions and refresh.';
+        }
+    }
+    
+    // Capture face and send to server
+    function captureFace() {
+        if (!stream) {
+            alert('Camera not active. Please allow permissions.');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, 640, 480);
+        const image = canvas.toDataURL('image/jpeg');
+        
+        statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        
+        // Correctly create FormData
+        const formData = new FormData();
+        formData.append('image', image);
+        
+        fetch(window.location.href, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            statusEl.innerHTML = '<i class="fas fa-' + (data.status === 'success' ? 'check-circle text-success' : 'exclamation-triangle text-danger') + '"></i> ' + data.message;
+            if (data.status === 'success') {
+                setTimeout(() => window.location.href = '{{ url_for("students") }}', 2000);
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            statusEl.innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i> Error enrolling face. Check console for details.';
+        });
+    }
+    
+    // Stop camera on page unload
+    window.addEventListener('beforeunload', () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
+    
+    // Initialize
+    startCamera();
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Welcome - Attendance System{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-4 text-primary"><i class="fas fa-user-check"></i> Face Recognition Attendance</h1>
+    <p class="lead">Secure, automated attendance tracking for your institution.</p>
+    <div class="mobile-stack justify-content-center mt-4">
+        <a href="/login" class="btn btn-primary btn-lg me-3"><i class="fas fa-sign-in-alt"></i> Login</a>
+        <a href="/register_admin" class="btn btn-outline-primary btn-lg"><i class="fas fa-user-plus"></i> Register</a>
+    </div>
+</div>
+{% endblock %}

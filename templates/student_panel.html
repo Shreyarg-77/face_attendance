@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Global Attendance Kiosk - Attendance System{% endblock %}
+{% block content %}
+<div class="text-center">
+    <h3 class="mb-4"><i class="fas fa-camera"></i> Global Attendance Kiosk</h3>
+    <p class="text-muted mb-4">Stand in front of the camera to mark your attendance automatically. Works for all classes!</p>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <button id="startBtn" class="btn btn-primary mobile-full mb-3" onclick="startKiosk()"><i class="fas fa-play"></i> Start Camera</button>
+            
+            <video id="video" width="640" height="480" autoplay muted style="border: 2px solid #007bff; border-radius: 10px; max-width: 100%; display: none;"></video>
+            <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+            
+            <div id="status" class="alert alert-info mt-3"><i class="fas fa-info-circle"></i> Click "Start Camera" to begin.</div>
+        </div>
+    </div>
+    
+    <p class="text-muted"><i class="fas fa-user-shield"></i> Admin: Set up in the morning. Refresh if needed.</p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+    let stream = null;
+    let detectionInterval = null;
+    let timeoutId = null;
+    
+    async function startKiosk() {
+        try {
+            // Load face-api.js models
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri('/static/weights'),
+                faceapi.nets.faceLandmark68Net.loadFromUri('/static/weights'),
+                faceapi.nets.faceRecognitionNet.loadFromUri('/static/weights')
+            ]);
+            
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById('video').srcObject = stream;
+            document.getElementById('video').style.display = 'block';
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('status').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Camera active. Detecting faces...';
+            
+            // Start face detection every 1 second
+            detectionInterval = setInterval(detectFace, 1000);
+            
+            // Auto-stop after 4 seconds if no recognition
+            timeoutId = setTimeout(() => {
+                stopCamera();
+                document.getElementById('status').innerHTML = '<i class="fas fa-times"></i> Timeout. No face recognized.';
+            }, 4000);
+        } catch (err) {
+            console.error('Camera error:', err);
+            document.getElementById('status').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Camera access denied. Please allow permissions.';
+        }
+    }
+    
+    async function detectFace() {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        if (video.readyState === 4) {
+            ctx.drawImage(video, 0, 0, 640, 480);
+            const image = canvas.toDataURL('image/jpeg');
+            
+            // Send to server for recognition
+            const formData = new FormData();
+            formData.append('image', image);
+            
+            fetch('/mark_attendance_student', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('status').innerHTML = '<i class="fas fa-' + (data.status === 'success' ? 'check-circle text-success' : 'exclamation-triangle text-warning') + '"></i> ' + data.message;
+                if (data.status === 'success') {
+                    clearInterval(detectionInterval);
+                    clearTimeout(timeoutId);
+                    setTimeout(() => stopCamera(), 2000);  // Stop after success
+                }
+            })
+            .catch(err => {
+                console.error('Recognition error:', err);
+                document.getElementById('status').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error processing.';
+            });
+        }
+    }
+    
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        clearInterval(detectionInterval);
+        clearTimeout(timeoutId);
+        document.getElementById('video').style.display = 'none';
+        document.getElementById('startBtn').style.display = 'block';
+        document.getElementById('status').innerHTML = '<i class="fas fa-info-circle"></i> Camera stopped. Click "Start Camera" to begin.';
+    }
+    
+    // Stop on page unload
+    window.addEventListener('beforeunload', stopCamera);
+</script>
+{% endblock %}
