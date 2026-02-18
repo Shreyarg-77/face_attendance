@@ -261,6 +261,8 @@ def edit_student(student_id):
     
     return render_template('edit_student.html', student={'id': student_id, 'name': student.name, 'class_name': student.class_name})
 
+import face_recognition  # Add this import at the top
+
 @app.route('/enroll_face/<int:student_id>', methods=['GET', 'POST'])
 @login_required
 def enroll_face(student_id):
@@ -279,15 +281,11 @@ def enroll_face(student_id):
             np_arr = np.frombuffer(image, np.uint8)
             img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             
-            # Use OpenCV Haar cascade for face detection (basic)
-            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-            
-            if len(faces) > 0:
-                # For simplicity, store a placeholder or basic encoding (not full matching)
-                # You can expand this for better matching if needed
-                encoding_str = "opencv_detected"  # Placeholder
+            # Use face_recognition for accurate face encoding
+            face_encodings = face_recognition.face_encodings(img)
+            if face_encodings:
+                face_encoding = face_encodings[0]
+                encoding_str = ','.join(map(str, face_encoding))
                 
                 student.encoding = encoding_str
                 db.session.commit()
@@ -308,6 +306,55 @@ def enroll_face(student_id):
                 return jsonify({'status': 'error', 'message': 'Error processing image.'})
             flash('Error processing image.')
     return render_template('enroll_face.html', student=student.name)
+
+@app.route('/mark_attendance_student', methods=['POST'])
+def mark_attendance_student():
+    try:
+        image_data = request.form['image']
+        if not image_data:
+            return jsonify({'status': 'error', 'message': 'No image data received.'})
+        
+        import base64
+        image = base64.b64decode(image_data.split(',')[1])
+        np_arr = np.frombuffer(image, np.uint8)
+        img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        
+        if img is None:
+            return jsonify({'status': 'error', 'message': 'Invalid image format.'})
+        
+        # Use face_recognition for face matching
+        face_encodings = face_recognition.face_encodings(img)
+        if not face_encodings:
+            return jsonify({'status': 'error', 'message': 'No face detected.'})
+        
+        for face_encoding in face_encodings:
+            distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+            best_match_index = np.argmin(distances)
+            best_distance = distances[best_match_index]
+            
+            if best_distance < 0.6:  # Adjust threshold if needed (lower = stricter)
+                student_id = known_face_student_ids[best_match_index]
+                now = datetime.now()
+                date = now.strftime('%Y-%m-%d')
+                time_str = now.strftime('%H-%M-%S')
+                
+                student = Student.query.filter_by(id=student_id).first()
+                if student:
+                    student_name, student_class = student.name, student.class_name
+                    existing = Attendance.query.filter_by(student_id=student_id, date=date).first()
+                    if not existing:
+                        new_id = db.session.query(db.func.max(Attendance.id)).scalar() or 0 + 1
+                        new_attendance = Attendance(id=new_id, student_id=student_id, date=date, time=time_str)
+                        db.session.add(new_attendance)
+                        db.session.commit()
+                        return jsonify({'status': 'success', 'message': f'Attendance marked for {student_name} ({student_class})!'})
+                    return jsonify({'status': 'info', 'message': 'Already marked today.'})
+        
+        return jsonify({'status': 'error', 'message': 'Face not recognized.'})
+    
+    except Exception as e:
+        app.logger.error(f"Error: {e}")
+        return jsonify({'status': 'error', 'message': 'Error processing.'})
 
 
 @app.route('/insights')
@@ -455,20 +502,35 @@ def mark_attendance_student():
         if img is None:
             return jsonify({'status': 'error', 'message': 'Invalid image format.'})
         
-        # Use OpenCV for face detection
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-        
-        if len(faces) > 0:
-            # For simplicity, assume the first face is the student (or prompt for ID)
-            # You can add logic to match against known encodings if expanded
-            # For now, mark attendance for a default or prompt user
-            # Example: Assume student ID is provided or use a simple match
-            # Since full matching is removed, you might need to modify the UI to ask for student ID
-            return jsonify({'status': 'success', 'message': 'Face detected! Please enter your student ID to mark attendance.'})
-        else:
+        # Use face_recognition for face matching
+        face_encodings = face_recognition.face_encodings(img)
+        if not face_encodings:
             return jsonify({'status': 'error', 'message': 'No face detected.'})
+        
+        for face_encoding in face_encodings:
+            distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+            best_match_index = np.argmin(distances)
+            best_distance = distances[best_match_index]
+            
+            if best_distance < 0.6:  # Adjust threshold if needed (lower = stricter)
+                student_id = known_face_student_ids[best_match_index]
+                now = datetime.now()
+                date = now.strftime('%Y-%m-%d')
+                time_str = now.strftime('%H-%M-%S')
+                
+                student = Student.query.filter_by(id=student_id).first()
+                if student:
+                    student_name, student_class = student.name, student.class_name
+                    existing = Attendance.query.filter_by(student_id=student_id, date=date).first()
+                    if not existing:
+                        new_id = db.session.query(db.func.max(Attendance.id)).scalar() or 0 + 1
+                        new_attendance = Attendance(id=new_id, student_id=student_id, date=date, time=time_str)
+                        db.session.add(new_attendance)
+                        db.session.commit()
+                        return jsonify({'status': 'success', 'message': f'Attendance marked for {student_name} ({student_class})!'})
+                    return jsonify({'status': 'info', 'message': 'Already marked today.'})
+        
+        return jsonify({'status': 'error', 'message': 'Face not recognized.'})
     
     except Exception as e:
         app.logger.error(f"Error: {e}")
