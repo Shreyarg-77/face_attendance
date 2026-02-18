@@ -2,11 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-import face_recognition
-import cv2
-import numpy as np
-from deepface import DeepFace
-import numpy as np
+import cv2  # Added for OpenCV
+import numpy as np  # Added for numpy
 import pickle
 import os
 from datetime import datetime, timedelta
@@ -22,6 +19,7 @@ import time
 import qrcode
 from io import BytesIO
 import logging
+import base64  # For image encoding
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'  # Change this to a random string
@@ -40,10 +38,9 @@ login_manager.login_view = 'login'
 if not os.path.exists('models'):
     os.makedirs('models')
 
-# Global variables for face recognition
-known_face_encodings = []
+# Global variables for face recognition (updated for ORB)
+known_face_encodings = []  # Now stores ORB descriptors
 known_face_student_ids = []
-models_loaded = False  # Flag for lazy model loading
 
 # User class for Flask-Login
 class Admin(UserMixin, db.Model):
@@ -65,7 +62,7 @@ class Student(db.Model):
     name = db.Column(db.String(100))
     class_name = db.Column(db.String(100))
     enrolled_by_admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'))
-    encoding = db.Column(db.Text)
+    encoding = db.Column(db.Text)  # Now stores base64 image
     class_display_id = db.Column(db.Integer)
 
 class Attendance(db.Model):
@@ -78,28 +75,21 @@ class Attendance(db.Model):
 def load_user(user_id):
     return Admin.query.get(int(user_id))
 
-# Load known faces (encodings only, lightweight)
+# Load known faces (updated for ORB features)
 def load_known_faces():
     global known_face_encodings, known_face_student_ids
     known_face_encodings = []
     known_face_student_ids = []
     students = Student.query.filter(Student.encoding.isnot(None)).all()
+    orb = cv2.ORB_create()
     for student in students:
-        encoding = np.array([float(x) for x in student.encoding.split(',')])
-        known_face_encodings.append(encoding)
+        # Decode stored image and extract ORB features
+        img_data = base64.b64decode(student.encoding)
+        img = cv2.imdecode(np.frombuffer(img_data, np.uint8), cv2.IMREAD_GRAYSCALE)
+        kp, des = orb.detectAndCompute(img, None)
+        known_face_encodings.append(des)
         known_face_student_ids.append(student.id)
-    app.logger.info(f"Loaded {len(known_face_encodings)} face encodings.")
-
-# Lazy load DeepFace models (on-demand)
-def load_models_if_needed():
-    global models_loaded
-    if not models_loaded:
-        try:
-            DeepFace.build_model('VGG-Face')  # Force model build
-            models_loaded = True
-            app.logger.info("DeepFace models loaded on-demand.")
-        except Exception as e:
-            app.logger.error(f"Model loading error: {e}")
+    app.logger.info(f"Loaded {len(known_face_encodings)} face features.")
 
 # Create tables and load encodings on startup
 time.sleep(10)  # Delay for DB stability
@@ -110,6 +100,7 @@ with app.app_context():
         app.logger.info("App initialized successfully.")
     except Exception as e:
         app.logger.error(f"Startup error: {e}")
+
 
 # Routes
 @app.route('/')
@@ -276,17 +267,17 @@ def enroll_face(student_id):
     if request.method == 'POST':
         image_data = request.form['image']
         try:
-            import base64
             image = base64.b64decode(image_data.split(',')[1])
-            np_arr = np.frombuffer(image, np.uint8)
-            img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            img = cv2.imdecode(np.frombuffer(image, np.uint8), cv2.IMREAD_COLOR)
             
-            # Use face_recognition for accurate face encoding
-            face_encodings = face_recognition.face_encodings(img)
-            if face_encodings:
-                face_encoding = face_encodings[0]
-                encoding_str = ','.join(map(str, face_encoding))
-                
+            # Detect face with OpenCV
+            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+            
+            if len(faces) > 0:
+                # Store the full image for feature matching
+                encoding_str = base64.b64encode(image).decode('utf-8')
                 student.encoding = encoding_str
                 db.session.commit()
                 
@@ -307,6 +298,7 @@ def enroll_face(student_id):
             flash('Error processing image.')
     return render_template('enroll_face.html', student=student.name)
 
+
 @app.route('/mark_attendance_student', methods=['POST'])
 def mark_attendance_student():
     try:
@@ -314,47 +306,58 @@ def mark_attendance_student():
         if not image_data:
             return jsonify({'status': 'error', 'message': 'No image data received.'})
         
-        import base64
         image = base64.b64decode(image_data.split(',')[1])
-        np_arr = np.frombuffer(image, np.uint8)
-        img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        img = cv2.imdecode(np.frombuffer(image, np.uint8), cv2.IMREAD_COLOR)
         
         if img is None:
             return jsonify({'status': 'error', 'message': 'Invalid image format.'})
         
-        # Use face_recognition for face matching
-        face_encodings = face_recognition.face_encodings(img)
-        if not face_encodings:
-            return jsonify({'status': 'error', 'message': 'No face detected.'})
+        # Detect face
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        faces = face_cascade.detectMultiScale(gray, 1.1, 4)
         
-        for face_encoding in face_encodings:
-            distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-            best_match_index = np.argmin(distances)
-            best_distance = distances[best_match_index]
+        if len(faces) > 0:
+            # Extract ORB features from captured image
+            orb = cv2.ORB_create()
+            kp, des = orb.detectAndCompute(gray, None)
+            if des is None:
+                return jsonify({'status': 'error', 'message': 'No features detected.'})
             
-            if best_distance < 0.6:  # Adjust threshold if needed (lower = stricter)
-                student_id = known_face_student_ids[best_match_index]
-                now = datetime.now()
-                date = now.strftime('%Y-%m-%d')
-                time_str = now.strftime('%H-%M-%S')
-                
-                student = Student.query.filter_by(id=student_id).first()
+            # Compare to known faces using BFMatcher
+            bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+            best_match = None
+            best_score = 0
+            for i, known_des in enumerate(known_face_encodings):
+                if known_des is not None:
+                    matches = bf.match(des, known_des)
+                    score = len(matches)  # Number of matches
+                    if score > best_score and score > 10:  # Adjust threshold
+                        best_score = score
+                        best_match = known_face_student_ids[i]
+            
+            if best_match:
+                student = Student.query.filter_by(id=best_match).first()
                 if student:
-                    student_name, student_class = student.name, student.class_name
-                    existing = Attendance.query.filter_by(student_id=student_id, date=date).first()
+                    now = datetime.now()
+                    date = now.strftime('%Y-%m-%d')
+                    time_str = now.strftime('%H-%M-%S')
+                    existing = Attendance.query.filter_by(student_id=best_match, date=date).first()
                     if not existing:
                         new_id = db.session.query(db.func.max(Attendance.id)).scalar() or 0 + 1
-                        new_attendance = Attendance(id=new_id, student_id=student_id, date=date, time=time_str)
+                        new_attendance = Attendance(id=new_id, student_id=best_match, date=date, time=time_str)
                         db.session.add(new_attendance)
                         db.session.commit()
-                        return jsonify({'status': 'success', 'message': f'Attendance marked for {student_name} ({student_class})!'})
+                        return jsonify({'status': 'success', 'message': f'Attendance marked for {student.name} ({student.class_name})!'})
                     return jsonify({'status': 'info', 'message': 'Already marked today.'})
-        
-        return jsonify({'status': 'error', 'message': 'Face not recognized.'})
+            return jsonify({'status': 'error', 'message': 'Face not recognized.'})
+        else:
+            return jsonify({'status': 'error', 'message': 'No face detected.'})
     
     except Exception as e:
         app.logger.error(f"Error: {e}")
         return jsonify({'status': 'error', 'message': 'Error processing.'})
+
 
 
 @app.route('/insights')
@@ -487,54 +490,6 @@ def send_attendance_mail():
 def student_panel():
     return render_template('student_panel.html')
 
-@app.route('/mark_attendance_student', methods=['POST'])
-def mark_attendance_student():
-    try:
-        image_data = request.form['image']
-        if not image_data:
-            return jsonify({'status': 'error', 'message': 'No image data received.'})
-        
-        import base64
-        image = base64.b64decode(image_data.split(',')[1])
-        np_arr = np.frombuffer(image, np.uint8)
-        img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-        
-        if img is None:
-            return jsonify({'status': 'error', 'message': 'Invalid image format.'})
-        
-        # Use face_recognition for face matching
-        face_encodings = face_recognition.face_encodings(img)
-        if not face_encodings:
-            return jsonify({'status': 'error', 'message': 'No face detected.'})
-        
-        for face_encoding in face_encodings:
-            distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-            best_match_index = np.argmin(distances)
-            best_distance = distances[best_match_index]
-            
-            if best_distance < 0.6:  # Adjust threshold if needed (lower = stricter)
-                student_id = known_face_student_ids[best_match_index]
-                now = datetime.now()
-                date = now.strftime('%Y-%m-%d')
-                time_str = now.strftime('%H-%M-%S')
-                
-                student = Student.query.filter_by(id=student_id).first()
-                if student:
-                    student_name, student_class = student.name, student.class_name
-                    existing = Attendance.query.filter_by(student_id=student_id, date=date).first()
-                    if not existing:
-                        new_id = db.session.query(db.func.max(Attendance.id)).scalar() or 0 + 1
-                        new_attendance = Attendance(id=new_id, student_id=student_id, date=date, time=time_str)
-                        db.session.add(new_attendance)
-                        db.session.commit()
-                        return jsonify({'status': 'success', 'message': f'Attendance marked for {student_name} ({student_class})!'})
-                    return jsonify({'status': 'info', 'message': 'Already marked today.'})
-        
-        return jsonify({'status': 'error', 'message': 'Face not recognized.'})
-    
-    except Exception as e:
-        app.logger.error(f"Error: {e}")
-        return jsonify({'status': 'error', 'message': 'Error processing.'})
     
 @app.route('/qr_code')
 @login_required
