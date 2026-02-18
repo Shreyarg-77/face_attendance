@@ -1,69 +1,49 @@
 {% extends 'base.html' %}
-{% block title %}Students - Attendance System{% endblock %}
+
 {% block content %}
-<h3 class="text-center mb-4"><i class="fas fa-users"></i> Manage Students (Class: {{ current_user.class_name }})</h3>
-<div class="card mb-4">
-    <div class="card-header">
-        <button class="btn btn-link text-decoration-none w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#addStudentForm">
-            <h5 class="mb-0"><i class="fas fa-user-plus"></i> Add New Student</h5>
-        </button>
-    </div>
-    <div class="collapse show" id="addStudentForm">
-        <div class="card-body">
-            <form method="POST">
-                <div class="mb-3">
-                    <label for="name" class="form-label"><i class="fas fa-tag"></i> Student Name</label>
-                    <input type="text" name="name" class="form-control" id="name" required>
-                </div>
-                <button type="submit" class="btn btn-primary mobile-full"><i class="fas fa-plus"></i> Add Student</button>
-            </form>
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Manage Students - {{ current_user.class_name }}</h2>
+    
+    <!-- Add Student Form -->
+    <form method="POST" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="name" class="form-control" placeholder="Enter student name" required>
+            <button type="submit" class="btn btn-success">Add Student</button>
         </div>
-    </div>
-</div>
-<div class="card">
-    <div class="card-header">
-        <h5><i class="fas fa-list"></i> Enrolled Students</h5>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th><i class="fas fa-id-badge"></i> Class ID</th>
-                        <th><i class="fas fa-user"></i> Name</th>
-                        <th><i class="fas fa-check-circle"></i> Enrolled</th>
-                        <th><i class="fas fa-cogs"></i> Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for student in students %}
-                    <tr>
-                        <td>{{ student[3] }}</td>
-                        <td>{{ student[1] }}</td>
-                        <td>
-                            {% if enrolled_status[student[0]] %}
-                            <span class="badge bg-success"><i class="fas fa-check"></i> Yes</span>
-                            {% else %}
-                            <span class="badge bg-danger"><i class="fas fa-times"></i> No</span>
-                            {% endif %}
-                        </td>
-                        <td class="mobile-stack">
-                            {% if not enrolled_status[student[0]] %}
-                            <a href="{{ url_for('enroll_face', student_id=student[0]) }}" class="btn btn-primary btn-sm"><i class="fas fa-camera"></i> Enroll</a>
-                            {% endif %}
-                            <a href="{{ url_for('edit_student', student_id=student[0]) }}" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i> Edit</a>
-                            <form method="POST" action="{{ url_for('delete_student', student_id=student[0]) }}" style="display:inline;">
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')"><i class="fas fa-trash"></i> Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% if students|length == 0 %}
-        <p class="text-muted text-center"><i class="fas fa-info-circle"></i> No students enrolled yet.</p>
-        {% endif %}
-    </div>
+    </form>
+    
+    <!-- Students Table -->
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Class ID</th>
+                <th>Name</th>
+                <th>Enrolled</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>{{ student.class_display_id }}</td>
+                <td>{{ student.name }}</td>
+                <td>
+                    {% if enrolled_status[student.id] %}
+                        <span class="badge bg-success">Yes</span>
+                    {% else %}
+                        <span class="badge bg-warning">No</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('enroll_face', student_id=student.id) }}" class="btn btn-primary btn-sm"><i class="fas fa-camera"></i> Enroll</a>
+                    <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i> Edit</a>
+                    <form method="POST" action="{{ url_for('delete_student', student_id=student.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure?')">
+                        <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}
