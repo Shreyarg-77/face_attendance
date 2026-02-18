@@ -493,7 +493,7 @@ def student_panel():
 @app.route('/qr_code')
 @login_required
 def qr_code():
-    app_url = 'https://your-render-app-name.onrender.com/'  # Replace with your Render URL
+    app_url = 'https://faceattendance-production-f80c.up.railway.app'  
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
     qr.add_data(app_url)
     qr.make(fit=True)
