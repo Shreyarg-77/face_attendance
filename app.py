@@ -252,7 +252,6 @@ def edit_student(student_id):
     
     return render_template('edit_student.html', student={'id': student_id, 'name': student.name, 'class_name': student.class_name})
 
-import face_recognition  # Add this import at the top
 
 @app.route('/enroll_face/<int:student_id>', methods=['GET', 'POST'])
 @login_required
