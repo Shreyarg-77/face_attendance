@@ -413,7 +413,7 @@ def kiosk_status():
         admin = ''
         if active:
             try:
-                with open(status_file, 'r') as as f:
+                with open(status_file, 'r') as f:
                     admin = f.read()
             except Exception as e:
                 app.logger.error(f"Error reading kiosk status: {e}")
