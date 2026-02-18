@@ -2,8 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-import cv2  # Added for OpenCV
-import numpy as np  # Added for numpy
+import cv2  # For OpenCV face detection
+import numpy as np  # For numpy arrays
 import pickle
 import os
 from datetime import datetime, timedelta
@@ -38,8 +38,8 @@ login_manager.login_view = 'login'
 if not os.path.exists('models'):
     os.makedirs('models')
 
-# Global variables for face recognition (updated for ORB)
-known_face_encodings = []  # Now stores ORB descriptors
+# Global variables for face recognition (using ORB descriptors)
+known_face_encodings = []  # List of ORB descriptors
 known_face_student_ids = []
 
 # User class for Flask-Login
@@ -62,7 +62,7 @@ class Student(db.Model):
     name = db.Column(db.String(100))
     class_name = db.Column(db.String(100))
     enrolled_by_admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'))
-    encoding = db.Column(db.Text)  # Now stores base64 image
+    encoding = db.Column(db.Text)  # Stores base64 image
     class_display_id = db.Column(db.Integer)
 
 class Attendance(db.Model):
@@ -75,7 +75,7 @@ class Attendance(db.Model):
 def load_user(user_id):
     return Admin.query.get(int(user_id))
 
-# Load known faces (updated for ORB features)
+# Load known faces (ORB features)
 def load_known_faces():
     global known_face_encodings, known_face_student_ids
     known_face_encodings = []
@@ -83,7 +83,6 @@ def load_known_faces():
     students = Student.query.filter(Student.encoding.isnot(None)).all()
     orb = cv2.ORB_create()
     for student in students:
-        # Decode stored image and extract ORB features
         img_data = base64.b64decode(student.encoding)
         img = cv2.imdecode(np.frombuffer(img_data, np.uint8), cv2.IMREAD_GRAYSCALE)
         kp, des = orb.detectAndCompute(img, None)
@@ -100,7 +99,6 @@ with app.app_context():
         app.logger.info("App initialized successfully.")
     except Exception as e:
         app.logger.error(f"Startup error: {e}")
-
 
 # Routes
 @app.route('/')
@@ -252,7 +250,6 @@ def edit_student(student_id):
     
     return render_template('edit_student.html', student={'id': student_id, 'name': student.name, 'class_name': student.class_name})
 
-
 @app.route('/enroll_face/<int:student_id>', methods=['GET', 'POST'])
 @login_required
 def enroll_face(student_id):
@@ -357,8 +354,6 @@ def mark_attendance_student():
         app.logger.error(f"Error: {e}")
         return jsonify({'status': 'error', 'message': 'Error processing.'})
 
-
-
 @app.route('/insights')
 @login_required
 def insights():
@@ -418,7 +413,7 @@ def kiosk_status():
         admin = ''
         if active:
             try:
-                with open(status_file, 'r') as f:
+                with open(status_file, 'r') as as f:
                     admin = f.read()
             except Exception as e:
                 app.logger.error(f"Error reading kiosk status: {e}")
@@ -439,7 +434,6 @@ def export_attendance_csv():
     output.seek(0)
     return Response(output.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=attendance.csv'})
 
-
 @app.route('/send_attendance_mail', methods=['POST'])
 @login_required
 def send_attendance_mail():
@@ -457,8 +451,8 @@ def send_attendance_mail():
             writer.writerow(['ID', 'Student Name', 'Class Name', 'Date', 'Time'])
             writer.writerows(records)
         
-        from_email = 'shreyagaikwad2710@gmail.com'
-        password = 'jolmpqlfusjhflis'
+        from_email = 'shreyagaikwad2710@gmail.com'  # Replace with your email
+        password = 'jolmpqlfusjhflis'  # Use app password for Gmail
         msg = MIMEMultipart()
         msg['From'] = from_email
         msg['To'] = recipient_email
@@ -477,23 +471,18 @@ def send_attendance_mail():
         server.login(from_email, password)
         server.sendmail(from_email, recipient_email, msg.as_string())
         server.quit()
-        return jsonify({'message': 'Email sent successfully to your registered email!'})
+        
+        return jsonify({'message': 'Email sent successfully!'})
     except Exception as e:
         return jsonify({'message': f'Error sending email: {str(e)}'})
     finally:
         if os.path.exists(csv_path):
             os.remove(csv_path)
 
-
-@app.route('/student_panel')
-def student_panel():
-    return render_template('student_panel.html')
-
-    
 @app.route('/qr_code')
 @login_required
 def qr_code():
-    app_url = 'https://faceattendance-production-f80c.up.railway.app'  
+    app_url = 'https://faceattendance-production-f80c.up.railway.app'  # Replace with your Railway URL
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
     qr.add_data(app_url)
     qr.make(fit=True)
@@ -506,3 +495,4 @@ def qr_code():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
+   
