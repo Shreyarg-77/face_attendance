@@ -40,6 +40,7 @@
 </div>
 </div>
 </div>
+</div>
 <div class="row mt-4">
     <div class="col-12">
         <div class="alert alert-info mobile-center">
@@ -72,8 +73,14 @@
         })
         .then(response => response.json())
         .then(data => {
-            alert('Kiosk started! The kiosk device will automatically activate.');
-            location.reload();
+            if (data.status === 'already_active') {
+                alert(data.message);
+            } else if (data.status === 'active') {
+                alert('Kiosk started! The kiosk device will automatically activate.');
+                location.reload();
+            } else {
+                alert('Error starting kiosk.');
+            }
         })
         .catch(err => alert('Error: ' + err));
     }

@@ -152,16 +152,26 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    status_file = 'models/kiosk_active.txt'
-    kiosk_active = os.path.exists(status_file)
-    kiosk_admin = ''
-    if kiosk_active:
-        try:
-            with open(status_file, 'r') as f:
-                kiosk_admin = f.read()
-        except Exception as e:
-            app.logger.error(f"Error reading kiosk status: {e}")
-    return render_template('dashboard.html', kiosk_active=kiosk_active, kiosk_admin=kiosk_admin)
+    # Count total students for this admin's class
+    total_students = Student.query.filter_by(class_name=current_user.class_name).count()
+    
+    # Count today's attendance for this admin's class
+    today = datetime.now().strftime('%Y-%m-%d')
+    todays_count = db.session.query(Attendance).join(Student).filter(
+        Student.class_name == current_user.class_name,
+        Attendance.date == today
+    ).count()
+    
+    # Check kiosk status
+    kiosk = KioskStatus.query.first()
+    kiosk_active = kiosk.active if kiosk else False
+    kiosk_admin = kiosk.admin_info if kiosk else ''
+    
+    return render_template('dashboard.html', 
+                          total_students=total_students, 
+                          todays_count=todays_count,
+                          kiosk_active=kiosk_active,
+                          kiosk_admin=kiosk_admin)
 
 @app.route('/kiosk_display')
 def kiosk_display():
@@ -404,9 +414,17 @@ def blacklist():
 @app.route('/kiosk_status', methods=['GET', 'POST', 'DELETE'])
 @login_required
 def kiosk_status():
+    kiosk = KioskStatus.query.first()
+    
     if request.method == 'POST':
+        # Check if already active
+        if kiosk and kiosk.active:
+            return jsonify({
+                'status': 'already_active', 
+                'message': f'Kiosk is already running! Started by: {kiosk.admin_info}'
+            })
+        
         # Start kiosk
-        kiosk = KioskStatus.query.first()
         if not kiosk:
             kiosk = KioskStatus(active=True, admin_info=f"{current_user.username} ({current_user.class_name})")
             db.session.add(kiosk)
@@ -415,25 +433,20 @@ def kiosk_status():
             kiosk.admin_info = f"{current_user.username} ({current_user.class_name})"
             kiosk.updated_at = datetime.now()
         db.session.commit()
-        return jsonify({'status': 'active'})
+        return jsonify({'status': 'active', 'message': 'Kiosk started successfully!'})
     
     elif request.method == 'DELETE':
-        # Stop kiosk
-        kiosk = KioskStatus.query.first()
         if kiosk:
             kiosk.active = False
             kiosk.admin_info = ''
             kiosk.updated_at = datetime.now()
             db.session.commit()
-        return jsonify({'status': 'inactive'})
+        return jsonify({'status': 'inactive', 'message': 'Kiosk stopped!'})
     
     else:
-        # Check status
-        kiosk = KioskStatus.query.first()
         if kiosk and kiosk.active:
             return jsonify({'active': True, 'admin': kiosk.admin_info})
         return jsonify({'active': False, 'admin': ''})
-    
 
 @app.route('/export_attendance_csv')
 @login_required
