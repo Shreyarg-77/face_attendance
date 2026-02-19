@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+{% block title %}Student Panel - Attendance System{% endblock %}
 {% block content %}
 <div class="text-center">
     <h3 class="mb-4"><i class="fas fa-camera"></i> Mark Your Attendance</h3>
@@ -12,42 +12,15 @@
             <video id="video" width="640" height="480" autoplay muted style="border: 2px solid #007bff; border-radius: 10px; max-width: 100%; display: none;"></video>
             <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
             
-            <div id="status" class="alert alert-info mt-3"><i class="fas fa-info-circle"></i> Waiting for admin to start kiosk...</div>
+            <div id="status" class="alert alert-info mt-3"><i class="fas fa-info-circle"></i> Click "Start Camera" to begin.</div>
         </div>
     </div>
     
-    <p id="adminInfo" class="text-muted"></p>
+    <p class="text-muted"><i class="fas fa-user-shield"></i> Admin: Set up in the morning. Refresh if needed.</p>
 </div>
 
 <script>
     let stream = null;
-    let kioskActive = false;
-    
-    // Check if admin started kiosk
-    function checkKioskStatus() {
-        fetch('/kiosk_status')
-            .then(response => response.json())
-            .then(data => {
-                if (data.active) {
-                    kioskActive = true;
-                    document.getElementById('adminInfo').innerText = 'Kiosk Active - Started by: ' + data.admin;
-                    document.getElementById('status').innerHTML = '<i class="fas fa-info-circle"></i> Click "Start Camera" to mark attendance.';
-                    document.getElementById('status').className = 'alert alert-info mt-3';
-                    
-                    if (!stream) {
-                        document.getElementById('startBtn').style.display = 'block';
-                    }
-                } else {
-                    kioskActive = false;
-                    document.getElementById('adminInfo').innerText = '';
-                    document.getElementById('startBtn').style.display = 'none';
-                    document.getElementById('status').innerHTML = '<i class="fas fa-exclamation-circle"></i> Kiosk is not started. Please contact admin.';
-                    document.getElementById('status').className = 'alert alert-warning mt-3';
-                    stopCamera();
-                }
-            })
-            .catch(err => console.error('Error:', err));
-    }
     
     async function startCamera() {
         try {
@@ -57,6 +30,7 @@
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('status').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Camera active. Capturing...';
             
+            // Capture and send every 3 seconds
             setInterval(captureAndSend, 3000);
         } catch (err) {
             console.error('Camera error:', err);
@@ -100,15 +74,10 @@
             stream = null;
         }
         document.getElementById('video').style.display = 'none';
-        
-        if (kioskActive) {
-            document.getElementById('startBtn').style.display = 'block';
-            document.getElementById('status').innerHTML = '<i class="fas fa-info-circle"></i> Click "Start Camera" to mark attendance.';
-        }
+        document.getElementById('startBtn').style.display = 'block';
+        document.getElementById('status').innerHTML = '<i class="fas fa-info-circle"></i> Camera stopped.';
     }
     
-    setInterval(checkKioskStatus, 3000);
-    checkKioskStatus();
     window.addEventListener('beforeunload', stopCamera);
 </script>
 {% endblock %}
