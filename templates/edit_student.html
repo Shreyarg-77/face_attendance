@@ -1,26 +1,20 @@
 {% extends 'base.html' %}
-{% block title %}Edit Student - Attendance System{% endblock %}
+
 {% block content %}
-<h3 class="text-center mb-4"><i class="fas fa-edit"></i> Edit Student</h3>
-<div class="row justify-content-center">
-    <div class="col-md-6 col-12">
-        <div class="card">
-            <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label for="name" class="form-label"><i class="fas fa-tag"></i> Name</label>
-                        <input type="text" class="form-control" id="name" name="name" value="{{ student.name }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="class_name" class="form-label"><i class="fas fa-school"></i> Class</label>
-                        <input type="text" class="form-control" id="class_name" name="class_name" value="{{ student.class_name }}" required>
-                    </div>
-                    <div class="mobile-stack">
-                        <button type="submit" class="btn btn-primary me-2"><i class="fas fa-save"></i> Update</button>
-                        <a href="{{ url_for('students') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Cancel</a>
-                    </div>
-                </form>
-            </div>
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Edit Student</h2>
+    
+    <form method="POST" class="mb-4">
+        <div class="mb-3">
+            <label for="name" class="form-label">Student Name</label>
+            <input type="text" name="name" id="name" class="form-control" value="{{ student.name }}" required>
         </div>
-    </div>
+        <div class="mb-3">
+            <label for="class_name" class="form-label">Class Name</label>
+            <input type="text" name="class_name" id="class_name" class="form-control" value="{{ student.class_name }}" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Student</button>
+        <a href="{{ url_for('students') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Cancel</a>
+    </form>
 </div>
+{% endblock %}
