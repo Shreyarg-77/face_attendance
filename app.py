@@ -445,63 +445,17 @@ def send_attendance_mail():
     try:
         recipient_email = current_user.email
         if not recipient_email:
-            return jsonify({'message': 'No email found. Please update your profile.'})
+            return jsonify({'message': 'No email found in your profile.'})
         
         records = db.session.query(Attendance.id, Student.name, Student.class_name, Attendance.date, Attendance.time).join(Student).filter(Student.class_name == current_user.class_name).order_by(Attendance.date.desc(), Attendance.time.desc()).all()
         
         if not records:
             return jsonify({'message': 'No attendance records found.'})
         
-        csv_path = f'temp_attendance_{int(time.time())}.csv'
-        with open(csv_path, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow([f'Attendance Report for {current_user.class_name}'])
-            writer.writerow(['ID', 'Student Name', 'Class Name', 'Date', 'Time'])
-            writer.writerows(records)
-        
-        # Your Gmail and NEW App Password
-        from_email = 'shreyagaikwad2710@gmail.com'
-        password = 'aopzhargxezkxjgt'  # Replace with your new 16-character app password
-        
-        msg = MIMEMultipart()
-        msg['From'] = from_email
-        msg['To'] = recipient_email
-        msg['Subject'] = f'Attendance Report for {current_user.class_name}'
-        msg.attach(MIMEText('Attached is the attendance report.', 'plain'))
-        
-        with open(csv_path, 'rb') as attachment:
-            part = MIMEBase('application', 'octet-stream')
-            part.set_payload(attachment.read())
-            encoders.encode_base64(part)
-            part.add_header('Content-Disposition', f'attachment; filename={csv_path}')
-            msg.attach(part)
-        
-        # Try port 587 (TLS)
-        try:
-            server = smtplib.SMTP('smtp.gmail.com', 587)
-            server.starttls()
-            server.login(from_email, password)
-            server.sendmail(from_email, recipient_email, msg.as_string())
-            server.quit()
-        except Exception as smtp_error:
-            # If 587 fails, try port 465 (SSL)
-            try:
-                server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-                server.login(from_email, password)
-                server.sendmail(from_email, recipient_email, msg.as_string())
-                server.quit()
-            except:
-                raise smtp_error
-        
-        if os.path.exists(csv_path):
-            os.remove(csv_path)
-        
-        return jsonify({'message': 'Email sent successfully!'})
+        return jsonify({'message': 'Email is disabled on free hosting. Please use "Export CSV" button to download attendance records instead!'})
         
     except Exception as e:
-        if 'csv_path' in locals() and os.path.exists(csv_path):
-            os.remove(csv_path)
-        return jsonify({'message': f'Error: {str(e)}. Please use CSV export instead.'})
+        return jsonify({'message': f'Error: {str(e)}'})
 
 @app.route('/qr_code')
 @login_required
