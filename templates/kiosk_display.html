@@ -36,7 +36,10 @@
                     document.getElementById('adminInfo').innerText = 'Started by: ' + data.admin;
                     document.getElementById('status').innerHTML = 'Click "Start Camera" to mark attendance.';
                     document.getElementById('status').className = 'alert alert-info mt-3';
-                    document.getElementById('startBtn').style.display = 'inline-block';
+                    
+                    if (!isRunning) {
+                        document.getElementById('startBtn').style.display = 'inline-block';
+                    }
                 } else {
                     kioskActive = false;
                     document.getElementById('statusText').innerText = 'Kiosk Inactive';
@@ -86,6 +89,8 @@
     }
     
     function stopCamera() {
+        console.log('Stopping camera...');
+        
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
             stream = null;
@@ -99,10 +104,14 @@
         video.style.display = 'none';
         video.srcObject = null;
         
-        document.getElementById('startBtn').style.display = 'none';
-        document.getElementById('status').innerHTML = 'Click "Start Camera" to mark attendance.';
-        document.getElementById('status').className = 'alert alert-info mt-3';
         isRunning = false;
+        
+        // Show button only if kiosk is still active
+        if (kioskActive) {
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('status').innerHTML = 'Click "Start Camera" to mark attendance.';
+            document.getElementById('status').className = 'alert alert-info mt-3';
+        }
     }
     
     function captureAndSend() {
@@ -122,6 +131,7 @@
             fetch('/mark_attendance_student', { method: 'POST', body: formData })
             .then(response => response.json())
             .then(data => {
+                console.log('Response:', data);
                 if (data.status === 'success') {
                     document.getElementById('status').innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
                     document.getElementById('status').className = 'alert alert-success mt-3';
