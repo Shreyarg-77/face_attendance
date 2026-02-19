@@ -439,23 +439,6 @@ def export_attendance_csv():
     output.seek(0)
     return Response(output.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=attendance.csv'})
 
-@app.route('/send_attendance_mail', methods=['POST'])
-@login_required
-def send_attendance_mail():
-    try:
-        recipient_email = current_user.email
-        if not recipient_email:
-            return jsonify({'message': 'No email found in your profile.'})
-        
-        records = db.session.query(Attendance.id, Student.name, Student.class_name, Attendance.date, Attendance.time).join(Student).filter(Student.class_name == current_user.class_name).order_by(Attendance.date.desc(), Attendance.time.desc()).all()
-        
-        if not records:
-            return jsonify({'message': 'No attendance records found.'})
-        
-        return jsonify({'message': 'Email is disabled on free hosting. Please use "Export CSV" button to download attendance records instead!'})
-        
-    except Exception as e:
-        return jsonify({'message': f'Error: {str(e)}'})
 
 @app.route('/qr_code')
 @login_required
