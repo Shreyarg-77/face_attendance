@@ -66,30 +66,29 @@
 </div>
 <script>
     function openKioskDisplay() {
-        fetch('/kiosk_status', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'active') {
-                    window.open('/kiosk_display', '_blank', 'width=800,height=600,scrollbars=no,resizable=no');
-                    location.reload();
-                } else {
-                    alert('Error starting kiosk.');
-                }
-            })
-            .catch(err => alert('Error: ' + err));
+        fetch('/kiosk_status', { 
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('Kiosk started! The kiosk device will automatically activate.');
+            location.reload();
+        })
+        .catch(err => alert('Error: ' + err));
     }
     
     function stopKiosk() {
-        fetch('/kiosk_status', { method: 'DELETE' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'inactive') {
-                    location.reload();
-                } else {
-                    alert('Error stopping kiosk.');
-                }
-            })
-            .catch(err => alert('Error: ' + err));
+        fetch('/kiosk_status', { 
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('Kiosk stopped!');
+            location.reload();
+        })
+        .catch(err => alert('Error: ' + err));
     }
 </script>
 {% endblock %}

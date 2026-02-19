@@ -72,6 +72,12 @@ class Attendance(db.Model):
     time = db.Column(db.String(20))
     student = db.relationship('Student', backref='attendance_records')
 
+class KioskStatus(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    active = db.Column(db.Boolean, default=False)
+    admin_info = db.Column(db.String(200))
+    updated_at = db.Column(db.DateTime, default=datetime.now)
+
 @login_manager.user_loader
 def load_user(user_id):
     return Admin.query.get(int(user_id))
@@ -398,31 +404,36 @@ def blacklist():
 @app.route('/kiosk_status', methods=['GET', 'POST', 'DELETE'])
 @login_required
 def kiosk_status():
-    status_file = 'models/kiosk_active.txt'
     if request.method == 'POST':
-        try:
-            with open(status_file, 'w') as f:
-                f.write(f"{current_user.username} ({current_user.class_name})")
-            return jsonify({'status': 'active'})
-        except Exception as e:
-            return jsonify({'status': 'error', 'message': str(e)})
+        # Start kiosk
+        kiosk = KioskStatus.query.first()
+        if not kiosk:
+            kiosk = KioskStatus(active=True, admin_info=f"{current_user.username} ({current_user.class_name})")
+            db.session.add(kiosk)
+        else:
+            kiosk.active = True
+            kiosk.admin_info = f"{current_user.username} ({current_user.class_name})"
+            kiosk.updated_at = datetime.now()
+        db.session.commit()
+        return jsonify({'status': 'active'})
+    
     elif request.method == 'DELETE':
-        try:
-            if os.path.exists(status_file):
-                os.remove(status_file)
-            return jsonify({'status': 'inactive'})
-        except Exception as e:
-            return jsonify({'status': 'error', 'message': str(e)})
+        # Stop kiosk
+        kiosk = KioskStatus.query.first()
+        if kiosk:
+            kiosk.active = False
+            kiosk.admin_info = ''
+            kiosk.updated_at = datetime.now()
+            db.session.commit()
+        return jsonify({'status': 'inactive'})
+    
     else:
-        active = os.path.exists(status_file)
-        admin = ''
-        if active:
-            try:
-                with open(status_file, 'r') as f:
-                    admin = f.read()
-            except Exception as e:
-                app.logger.error(f"Error reading kiosk status: {e}")
-        return jsonify({'active': active, 'admin': admin})
+        # Check status
+        kiosk = KioskStatus.query.first()
+        if kiosk and kiosk.active:
+            return jsonify({'active': True, 'admin': kiosk.admin_info})
+        return jsonify({'active': False, 'admin': ''})
+    
 
 @app.route('/export_attendance_csv')
 @login_required

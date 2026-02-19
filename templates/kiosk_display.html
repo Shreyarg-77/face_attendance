@@ -4,6 +4,7 @@
 <div class="text-center mt-5">
     <h2 id="statusText">Kiosk Inactive</h2>
     <p id="adminInfo" class="text-muted"></p>
+    <p id="debugInfo" class="text-info"></p>
     <video id="video" width="640" height="480" autoplay muted style="display:none; border: 3px solid green; border-radius: 10px;"></video>
     <canvas id="canvas" style="display:none;"></canvas>
     <div id="status" class="alert alert-info mt-3">Waiting for admin to start kiosk...</div>
@@ -17,6 +18,8 @@
         fetch('/kiosk_status')
             .then(response => response.json())
             .then(data => {
+                document.getElementById('debugInfo').innerText = 'Last check: ' + new Date().toLocaleTimeString() + ' - Active: ' + data.active;
+                
                 if (data.active) {
                     document.getElementById('statusText').innerText = 'Kiosk Active';
                     document.getElementById('adminInfo').innerText = 'Started by: ' + data.admin;
@@ -37,7 +40,10 @@
                     }
                 }
             })
-            .catch(err => console.error('Error:', err));
+            .catch(err => {
+                console.error('Error:', err);
+                document.getElementById('debugInfo').innerText = 'Error checking status: ' + err;
+            });
     }
     
     async function startCamera() {
@@ -87,7 +93,10 @@
         }
     }
     
+    // Check every 2 seconds
     setInterval(checkStatus, 2000);
+    
+    // Check on page load
     checkStatus();
 </script>
 {% endblock %}
