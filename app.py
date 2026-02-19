@@ -422,14 +422,14 @@ def kiosk_status():
 @app.route('/export_attendance_csv')
 @login_required
 def export_attendance_csv():
-    records = db.session.query(Attendance.id, Student.name, Student.class_name, Attendance.date, Attendance.time).join(Student).filter(Student.class_name == current_user.class_name).order_by(Attendance.date.desc(), Attendance.time.desc()).all()
+    records = db.session.query(Attendance.id, Student.name, Attendance.date, Attendance.time).join(Student).filter(Student.class_name == current_user.class_name).order_by(Attendance.date.desc(), Attendance.time.desc()).all()
     
     output = StringIO()
     writer = csv.writer(output)
     writer.writerow([f'Attendance Report for {current_user.class_name}'])
-    writer.writerow(['ID', 'Student Name', 'Class Name', 'Date', 'Time'])
+    writer.writerow(['ID', 'Student Name', 'Date', 'Time'])
     for record in records:
-        writer.writerow([record[0], record[1], record[2], f'"{record[3]}"', record[4]])
+        writer.writerow([record[0], record[1], f'"{record[2]}"', record[3]])
     
     output.seek(0)
     return Response(output.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=attendance.csv'})

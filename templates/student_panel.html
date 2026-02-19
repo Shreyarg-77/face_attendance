@@ -59,30 +59,37 @@
         const ctx = canvas.getContext('2d');
         
         if (video.readyState === 4) {
-            ctx.drawImage(video, 0, 0, 640, 480);
-            const image = canvas.toDataURL('image/jpeg');
+            // First, detect faces using face-api.js on the client side
+            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
             
-            // Send to server for recognition
-            const formData = new FormData();
-            formData.append('image', image);
-            
-            fetch('/mark_attendance_student', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('status').innerHTML = '<i class="fas fa-' + (data.status === 'success' ? 'check-circle text-success' : 'exclamation-triangle text-warning') + '"></i> ' + data.message;
-                if (data.status === 'success') {
-                    clearInterval(detectionInterval);
-                    clearTimeout(timeoutId);
-                    setTimeout(() => stopCamera(), 2000);  // Stop after success
-                }
-            })
-            .catch(err => {
-                console.error('Recognition error:', err);
-                document.getElementById('status').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error processing.';
-            });
+            // Only send to server if at least one face is detected
+            if (detections && detections.length > 0) {
+                ctx.drawImage(video, 0, 0, 640, 480);
+                const image = canvas.toDataURL('image/jpeg');
+                
+                // Send to server for recognition
+                const formData = new FormData();
+                formData.append('image', image);
+                
+                fetch('/mark_attendance_student', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('status').innerHTML = '<i class="fas fa-' + (data.status === 'success' ? 'check-circle text-success' : 'exclamation-triangle text-warning') + '"></i> ' + data.message;
+                    if (data.status === 'success') {
+                        clearInterval(detectionInterval);
+                        clearTimeout(timeoutId);
+                        setTimeout(() => stopCamera(), 2000);  // Stop after success
+                    }
+                })
+                .catch(err => {
+                    console.error('Recognition error:', err);
+                    document.getElementById('status').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error processing.';
+                });
+            }
+            // If no face detected, do nothing and wait for next interval
         }
     }
     
