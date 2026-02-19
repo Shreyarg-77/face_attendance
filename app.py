@@ -70,6 +70,7 @@ class Attendance(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
     date = db.Column(db.String(20))
     time = db.Column(db.String(20))
+    student = db.relationship('Student', backref='attendance_records')
 
 @login_manager.user_loader
 def load_user(user_id):
