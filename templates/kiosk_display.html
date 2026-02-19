@@ -5,84 +5,76 @@
     <h2 id="statusText">Kiosk Ready</h2>
     <p id="adminInfo" class="text-muted"></p>
     
-    <button id="startBtn" class="btn btn-primary btn-lg mb-3" onclick="startCamera()" style="display: none;">
+    <button id="startBtn" class="btn btn-primary btn-lg mb-3" onclick="startCamera()">
         <i class="fas fa-camera"></i> Start Camera
     </button>
     
-    <div style="position: relative; display: inline-block; margin: 20px auto;">
-        <video id="video" autoplay playsinline muted style="display: none; width: 640px; max-width: 100%; border: 3px solid green; border-radius: 10px; background: #000;"></video>
+    <div id="videoContainer" style="display: none;">
+        <video id="video" autoplay playsinline muted style="width: 640px; max-width: 100%; border: 3px solid green; border-radius: 10px; background: #000;"></video>
     </div>
     <canvas id="canvas" style="display: none;"></canvas>
     
     <div id="status" class="alert alert-info mt-3">Waiting for admin to start kiosk...</div>
-    <p id="debugInfo" class="text-muted small mt-3"></p>
 </div>
 
 <script>
     let stream = null;
     let captureInterval = null;
-    let isRunning = false;
     let kioskActive = false;
     
     function checkKioskStatus() {
         fetch('/kiosk_status')
             .then(response => response.json())
             .then(data => {
-                document.getElementById('debugInfo').innerText = 'Kiosk: ' + (data.active ? 'Active by ' + data.admin : 'Inactive');
-                
                 if (data.active) {
                     kioskActive = true;
                     document.getElementById('statusText').innerText = 'Kiosk Active';
                     document.getElementById('adminInfo').innerText = 'Started by: ' + data.admin;
-                    document.getElementById('status').innerHTML = 'Click "Start Camera" to mark attendance.';
-                    document.getElementById('status').className = 'alert alert-info mt-3';
                     
-                    if (!isRunning) {
+                    if (!stream) {
                         document.getElementById('startBtn').style.display = 'inline-block';
+                        document.getElementById('startBtn').disabled = false;
+                        document.getElementById('status').innerHTML = 'Click "Start Camera" to mark attendance.';
+                        document.getElementById('status').className = 'alert alert-info mt-3';
                     }
                 } else {
                     kioskActive = false;
                     document.getElementById('statusText').innerText = 'Kiosk Inactive';
                     document.getElementById('adminInfo').innerText = '';
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('videoContainer').style.display = 'none';
                     document.getElementById('status').innerHTML = '<i class="fas fa-exclamation-circle"></i> Kiosk is not started. Please contact admin.';
                     document.getElementById('status').className = 'alert alert-warning mt-3';
-                    document.getElementById('startBtn').style.display = 'none';
                     
-                    if (isRunning) {
-                        stopCamera();
-                    }
+                    stopCamera();
                 }
             })
-            .catch(err => {
-                console.error('Error:', err);
-            });
+            .catch(err => console.error('Error:', err));
     }
     
     async function startCamera() {
-        if (isRunning) return;
+        if (stream) return;
+        
+        document.getElementById('startBtn').disabled = true;
         
         try {
             stream = await navigator.mediaDevices.getUserMedia({
-                video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+                video: { width: { ideal: 640 }, height: { ideal: 480 } },
                 audio: false
             });
             
             const video = document.getElementById('video');
             video.srcObject = stream;
             
-            video.onloadedmetadata = function() {
-                video.play();
-                video.style.display = 'block';
-            };
-            
             document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('videoContainer').style.display = 'block';
             document.getElementById('status').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Camera active. Detecting face...';
             document.getElementById('status').className = 'alert alert-success mt-3';
-            isRunning = true;
             
-            captureInterval = setInterval(captureAndSend, 3000);
+            captureInterval = setInterval(captureAndSend, 4000);
         } catch (err) {
             console.error('Camera error:', err);
+            document.getElementById('startBtn').disabled = false;
             document.getElementById('status').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Camera access denied.';
             document.getElementById('status').className = 'alert alert-danger mt-3';
         }
@@ -91,22 +83,19 @@
     function stopCamera() {
         console.log('Stopping camera...');
         
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-            stream = null;
-        }
         if (captureInterval) {
             clearInterval(captureInterval);
             captureInterval = null;
         }
         
-        const video = document.getElementById('video');
-        video.style.display = 'none';
-        video.srcObject = null;
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
         
-        isRunning = false;
+        document.getElementById('videoContainer').style.display = 'none';
+        document.getElementById('startBtn').disabled = false;
         
-        // Show button only if kiosk is still active
         if (kioskActive) {
             document.getElementById('startBtn').style.display = 'inline-block';
             document.getElementById('status').innerHTML = 'Click "Start Camera" to mark attendance.';
@@ -119,7 +108,7 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         
-        if (video.readyState === video.HAVE_ENOUGH_DATA && stream) {
+        if (video.readyState === 4 && stream) {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -132,10 +121,11 @@
             .then(response => response.json())
             .then(data => {
                 console.log('Response:', data);
+                
                 if (data.status === 'success') {
                     document.getElementById('status').innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
                     document.getElementById('status').className = 'alert alert-success mt-3';
-                    setTimeout(() => stopCamera(), 2000);
+                    setTimeout(stopCamera, 2000);
                 } else if (data.status === 'info') {
                     document.getElementById('status').innerHTML = '<i class="fas fa-info-circle"></i> ' + data.message;
                     document.getElementById('status').className = 'alert alert-warning mt-3';
@@ -144,7 +134,7 @@
                     document.getElementById('status').className = 'alert alert-warning mt-3';
                 }
             })
-            .catch(err => { console.error('Error:', err); });
+            .catch(err => console.error('Error:', err));
         }
     }
     
