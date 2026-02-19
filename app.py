@@ -157,9 +157,9 @@ def dashboard():
             app.logger.error(f"Error reading kiosk status: {e}")
     return render_template('dashboard.html', kiosk_active=kiosk_active, kiosk_admin=kiosk_admin)
 
-@app.route('/student_panel')
-def student_panel():
-    return render_template('student_panel.html')
+@app.route('/kiosk_display')
+def kiosk_display():
+    return render_template('kiosk_display.html')
 
 @app.route('/attendance')
 @login_required

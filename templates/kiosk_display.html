@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="text-center mt-5">
+    <h2 id="statusText">Kiosk Inactive</h2>
+    <p id="adminInfo" class="text-muted"></p>
+    <video id="video" width="640" height="480" autoplay muted style="display:none; border: 3px solid green; border-radius: 10px;"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <div id="status" class="alert alert-info mt-3">Waiting for admin to start kiosk...</div>
+</div>
+
+<script>
+    let stream = null;
+    let captureInterval = null;
+    
+    function checkStatus() {
+        fetch('/kiosk_status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.active) {
+                    document.getElementById('statusText').innerText = 'Kiosk Active';
+                    document.getElementById('adminInfo').innerText = 'Started by: ' + data.admin;
+                    document.getElementById('status').innerText = 'Face detection running...';
+                    document.getElementById('status').className = 'alert alert-success mt-3';
+                    
+                    if (!stream) {
+                        startCamera();
+                    }
+                } else {
+                    document.getElementById('statusText').innerText = 'Kiosk Inactive';
+                    document.getElementById('adminInfo').innerText = '';
+                    document.getElementById('status').innerText = 'Waiting for admin to start kiosk...';
+                    document.getElementById('status').className = 'alert alert-info mt-3';
+                    
+                    if (stream) {
+                        stopCamera();
+                    }
+                }
+            })
+            .catch(err => console.error('Error:', err));
+    }
+    
+    async function startCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById('video').style.display = 'block';
+            captureInterval = setInterval(captureAndSend, 3000);
+        } catch (err) {
+            console.error('Camera error:', err);
+            document.getElementById('status').innerText = 'Camera error: ' + err.message;
+        }
+    }
+    
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        if (captureInterval) {
+            clearInterval(captureInterval);
+            captureInterval = null;
+        }
+        document.getElementById('video').style.display = 'none';
+    }
+    
+    function captureAndSend() {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        if (video.readyState === 4 && stream) {
+            ctx.drawImage(video, 0, 0, 640, 480);
+            const image = canvas.toDataURL('image/jpeg');
+            
+            const formData = new FormData();
+            formData.append('image', image);
+            
+            fetch('/mark_attendance_student', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('status').innerText = data.message;
+            })
+            .catch(err => console.error('Error:', err));
+        }
+    }
+    
+    setInterval(checkStatus, 2000);
+    checkStatus();
+</script>
+{% endblock %}

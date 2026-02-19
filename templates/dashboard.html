@@ -33,10 +33,11 @@
             <button onclick="stopKiosk()" class="btn btn-danger mt-auto"><i class="fas fa-stop"></i> Stop Kiosk</button>
             <small class="text-muted">Active by: {{ kiosk_admin }}</small>
             {% else %}
-            <button onclick="launchKiosk()" class="btn btn-warning mt-auto"><i class="fas fa-play"></i> Start Kiosk</button>
+            <button onclick="openKioskDisplay()" class="btn btn-warning mt-auto"><i class="fas fa-play"></i> Start Kiosk</button>
             {% endif %}
         </div>
     </div>
+</div>
 </div>
 </div>
 <div class="row mt-4">
@@ -64,15 +65,12 @@
     </div>
 </div>
 <script>
-    function launchKiosk() {
-        // Update kiosk status to active via AJAX
+    function openKioskDisplay() {
         fetch('/kiosk_status', { method: 'POST' })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'active') {
-                    // Open the student panel in a new window (kiosk mode)
-                    window.open('/student_panel', '_blank', 'width=800,height=600,scrollbars=no,resizable=no');
-                    // Reload dashboard to show "Stop" button
+                    window.open('/kiosk_display', '_blank', 'width=800,height=600,scrollbars=no,resizable=no');
                     location.reload();
                 } else {
                     alert('Error starting kiosk.');
@@ -82,12 +80,10 @@
     }
     
     function stopKiosk() {
-        // Update kiosk status to inactive via AJAX
         fetch('/kiosk_status', { method: 'DELETE' })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'inactive') {
-                    // Reload dashboard to show "Start" button
                     location.reload();
                 } else {
                     alert('Error stopping kiosk.');
