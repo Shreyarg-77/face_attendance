@@ -6,11 +6,14 @@
     <p id="adminInfo" class="text-muted"></p>
     
     <!-- Start Camera Button -->
-    <button id="startBtn" class="btn btn-primary btn-lg mb-3" onclick="startCamera()" style="display: inline-block;">
+    <button id="startBtn" class="btn btn-primary btn-lg mb-3" onclick="startCamera()">
         <i class="fas fa-camera"></i> Start Camera
     </button>
     
-    <video id="video" width="640" height="480" autoplay muted style="display: none; border: 3px solid green; border-radius: 10px;"></video>
+    <!-- Video Container -->
+    <div style="position: relative; display: inline-block; margin: 20px auto;">
+        <video id="video" autoplay playsinline muted style="display: none; width: 640px; max-width: 100%; border: 3px solid green; border-radius: 10px; background: #000;"></video>
+    </div>
     <canvas id="canvas" style="display: none;"></canvas>
     
     <div id="status" class="alert alert-info mt-3">Click "Start Camera" to mark attendance.</div>
@@ -27,7 +30,6 @@
         fetch('/kiosk_status')
             .then(response => response.json())
             .then(data => {
-                console.log('Kiosk status:', data);
                 document.getElementById('debugInfo').innerText = 'Kiosk: ' + (data.active ? 'Active by ' + data.admin : 'Inactive');
                 
                 if (data.active) {
@@ -47,8 +49,26 @@
         if (isRunning) return;
         
         try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            document.getElementById('video').style.display = 'block';
+            // Request camera with specific constraints
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    facingMode: 'user'
+                },
+                audio: false
+            });
+            
+            // Attach stream to video element
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            
+            // Wait for video to load
+            video.onloadedmetadata = function() {
+                video.play();
+                video.style.display = 'block';
+            };
+            
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('status').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Camera active. Detecting face...';
             document.getElementById('status').className = 'alert alert-success mt-3';
@@ -71,7 +91,11 @@
             clearInterval(captureInterval);
             captureInterval = null;
         }
-        document.getElementById('video').style.display = 'none';
+        
+        const video = document.getElementById('video');
+        video.style.display = 'none';
+        video.srcObject = null;
+        
         document.getElementById('startBtn').style.display = 'inline-block';
         document.getElementById('status').innerHTML = 'Click "Start Camera" to mark attendance.';
         document.getElementById('status').className = 'alert alert-info mt-3';
@@ -83,9 +107,13 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         
-        if (video.readyState === 4 && stream) {
-            ctx.drawImage(video, 0, 0, 640, 480);
-            const image = canvas.toDataURL('image/jpeg');
+        // Ensure video is ready
+        if (video.readyState === video.HAVE_ENOUGH_DATA && stream) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const image = canvas.toDataURL('image/jpeg', 0.8);
             
             const formData = new FormData();
             formData.append('image', image);
@@ -96,7 +124,6 @@
             })
             .then(response => response.json())
             .then(data => {
-                console.log('Response:', data);
                 if (data.status === 'success') {
                     document.getElementById('status').innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
                     document.getElementById('status').className = 'alert alert-success mt-3';
