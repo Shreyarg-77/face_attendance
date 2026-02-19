@@ -5,19 +5,16 @@
     <h2 id="statusText">Kiosk Ready</h2>
     <p id="adminInfo" class="text-muted"></p>
     
-    <!-- Start Camera Button -->
-    <button id="startBtn" class="btn btn-primary btn-lg mb-3" onclick="startCamera()">
+    <button id="startBtn" class="btn btn-primary btn-lg mb-3" onclick="startCamera()" style="display: none;">
         <i class="fas fa-camera"></i> Start Camera
     </button>
     
-    <!-- Video Container -->
     <div style="position: relative; display: inline-block; margin: 20px auto;">
         <video id="video" autoplay playsinline muted style="display: none; width: 640px; max-width: 100%; border: 3px solid green; border-radius: 10px; background: #000;"></video>
     </div>
     <canvas id="canvas" style="display: none;"></canvas>
     
-    <div id="status" class="alert alert-info mt-3">Click "Start Camera" to mark attendance.</div>
-    
+    <div id="status" class="alert alert-info mt-3">Waiting for admin to start kiosk...</div>
     <p id="debugInfo" class="text-muted small mt-3"></p>
 </div>
 
@@ -25,6 +22,7 @@
     let stream = null;
     let captureInterval = null;
     let isRunning = false;
+    let kioskActive = false;
     
     function checkKioskStatus() {
         fetch('/kiosk_status')
@@ -33,11 +31,23 @@
                 document.getElementById('debugInfo').innerText = 'Kiosk: ' + (data.active ? 'Active by ' + data.admin : 'Inactive');
                 
                 if (data.active) {
+                    kioskActive = true;
                     document.getElementById('statusText').innerText = 'Kiosk Active';
                     document.getElementById('adminInfo').innerText = 'Started by: ' + data.admin;
+                    document.getElementById('status').innerHTML = 'Click "Start Camera" to mark attendance.';
+                    document.getElementById('status').className = 'alert alert-info mt-3';
+                    document.getElementById('startBtn').style.display = 'inline-block';
                 } else {
+                    kioskActive = false;
                     document.getElementById('statusText').innerText = 'Kiosk Inactive';
-                    document.getElementById('adminInfo').innerText = 'Kiosk not started by admin';
+                    document.getElementById('adminInfo').innerText = '';
+                    document.getElementById('status').innerHTML = '<i class="fas fa-exclamation-circle"></i> Kiosk is not started. Please contact admin.';
+                    document.getElementById('status').className = 'alert alert-warning mt-3';
+                    document.getElementById('startBtn').style.display = 'none';
+                    
+                    if (isRunning) {
+                        stopCamera();
+                    }
                 }
             })
             .catch(err => {
@@ -49,21 +59,14 @@
         if (isRunning) return;
         
         try {
-            // Request camera with specific constraints
             stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: { ideal: 640 },
-                    height: { ideal: 480 },
-                    facingMode: 'user'
-                },
+                video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
                 audio: false
             });
             
-            // Attach stream to video element
             const video = document.getElementById('video');
             video.srcObject = stream;
             
-            // Wait for video to load
             video.onloadedmetadata = function() {
                 video.play();
                 video.style.display = 'block';
@@ -77,7 +80,7 @@
             captureInterval = setInterval(captureAndSend, 3000);
         } catch (err) {
             console.error('Camera error:', err);
-            document.getElementById('status').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Camera access denied. Please allow permissions.';
+            document.getElementById('status').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Camera access denied.';
             document.getElementById('status').className = 'alert alert-danger mt-3';
         }
     }
@@ -96,7 +99,7 @@
         video.style.display = 'none';
         video.srcObject = null;
         
-        document.getElementById('startBtn').style.display = 'inline-block';
+        document.getElementById('startBtn').style.display = 'none';
         document.getElementById('status').innerHTML = 'Click "Start Camera" to mark attendance.';
         document.getElementById('status').className = 'alert alert-info mt-3';
         isRunning = false;
@@ -107,21 +110,16 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         
-        // Ensure video is ready
         if (video.readyState === video.HAVE_ENOUGH_DATA && stream) {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
             const image = canvas.toDataURL('image/jpeg', 0.8);
-            
             const formData = new FormData();
             formData.append('image', image);
             
-            fetch('/mark_attendance_student', {
-                method: 'POST',
-                body: formData
-            })
+            fetch('/mark_attendance_student', { method: 'POST', body: formData })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
@@ -136,13 +134,11 @@
                     document.getElementById('status').className = 'alert alert-warning mt-3';
                 }
             })
-            .catch(err => {
-                console.error('Error:', err);
-            });
+            .catch(err => { console.error('Error:', err); });
         }
     }
     
-    setInterval(checkKioskStatus, 5000);
+    setInterval(checkKioskStatus, 3000);
     checkKioskStatus();
     window.addEventListener('beforeunload', stopCamera);
 </script>
