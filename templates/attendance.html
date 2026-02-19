@@ -71,7 +71,10 @@
     <h5 class="mb-3"><i class="fas fa-tools"></i> Actions</h5>
     <div class="mobile-stack d-inline-flex flex-wrap justify-content-center">
         <a href="{{ url_for('export_attendance_csv') }}" class="btn btn-success btn-lg me-3 mb-2"><i class="fas fa-download"></i> Export CSV</a>
-        <a href="javascript:void(0)" onclick="sendEmail()" class="btn btn-info btn-lg mb-2"><i class="fas fa-envelope"></i> Send Email</a>
+        
+        <form method="POST" action="{{ url_for('send_attendance_mail') }}" style="display:inline;">
+            <button type="submit" class="btn btn-info btn-lg mb-2"><i class="fas fa-envelope"></i> Send Email</button>
+        </form>
     </div>
 </div>
 
