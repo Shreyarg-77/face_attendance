@@ -71,15 +71,17 @@
     <h5 class="mb-3"><i class="fas fa-tools"></i> Actions</h5>
     <div class="mobile-stack d-inline-flex flex-wrap justify-content-center">
         <a href="{{ url_for('export_attendance_csv') }}" class="btn btn-success btn-lg me-3 mb-2"><i class="fas fa-download"></i> Export CSV</a>
-        <button class="btn btn-info btn-lg mb-2" onclick="sendEmail()"><i class="fas fa-envelope"></i> Send Email</button>
+        <button type="button" class="btn btn-info btn-lg mb-2" id="sendEmailBtn"><i class="fas fa-envelope"></i> Send Email</button>
     </div>
 </div>
 <script>
-    function sendEmail() {
-        fetch('{{ url_for("send_attendance_mail") }}', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => alert(data.message))
-            .catch(err => alert('Error sending email.'));
-    }
+    document.getElementById('sendEmailBtn').addEventListener('click', function() {
+        fetch('{{ url_for("send_attendance_mail") }}', { 
+            method: 'POST' 
+        })
+        .then(response => response.json())
+        .then(data => alert(data.message))
+        .catch(err => alert('Error sending email.'));
+    });
 </script>
 {% endblock %}
