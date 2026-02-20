@@ -318,6 +318,9 @@ def enroll_face(student_id):
 
 @app.route('/mark_attendance_student', methods=['POST'])
 def mark_attendance_student():
+    # Load known faces before processing
+    load_known_faces()
+    
     try:
         image_data = request.form['image']
         if not image_data:
@@ -329,27 +332,25 @@ def mark_attendance_student():
         if img is None:
             return jsonify({'status': 'error', 'message': 'Invalid image format.'})
         
-        # Detect face
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, 1.1, 4)
         
         if len(faces) > 0:
-            # Extract ORB features from captured image
             orb = cv2.ORB_create()
             kp, des = orb.detectAndCompute(gray, None)
             if des is None:
                 return jsonify({'status': 'error', 'message': 'No features detected.'})
             
-            # Compare to known faces using BFMatcher
             bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
             best_match = None
             best_score = 0
+            
             for i, known_des in enumerate(known_face_encodings):
-                if known_des is not None:
+                if known_des is not None and len(known_des) > 0:
                     matches = bf.match(des, known_des)
-                    score = len(matches)  # Number of matches
-                    if score > best_score and score > 10:  # Adjust threshold
+                    score = len(matches)
+                    if score > best_score and score > 10:
                         best_score = score
                         best_match = known_face_student_ids[i]
             
@@ -358,14 +359,13 @@ def mark_attendance_student():
                 if student:
                     now = datetime.now()
                     date = now.strftime('%Y-%m-%d')
-                    time_str = now.strftime('%H-%M-%S')
+                    time_str = now.strftime('%H:%M:%S')
                     existing = Attendance.query.filter_by(student_id=best_match, date=date).first()
                     if not existing:
-                        new_id = db.session.query(db.func.max(Attendance.id)).scalar() or 0 + 1
-                        new_attendance = Attendance(id=new_id, student_id=best_match, date=date, time=time_str)
+                        new_attendance = Attendance(student_id=best_match, date=date, time=time_str)
                         db.session.add(new_attendance)
                         db.session.commit()
-                        return jsonify({'status': 'success', 'message': f'Attendance marked for {student.name} ({student.class_name})!'})
+                        return jsonify({'status': 'success', 'message': f'Attendance marked for {student.name}!'})
                     return jsonify({'status': 'info', 'message': 'Already marked today.'})
             return jsonify({'status': 'error', 'message': 'Face not recognized.'})
         else:
