@@ -7,22 +7,51 @@
     
     <div class="card mb-4">
         <div class="card-body">
-            <button id="startBtn" class="btn btn-primary mobile-full mb-3" onclick="startCamera()"><i class="fas fa-play"></i> Start Camera</button>
+            <button id="startBtn" class="btn btn-primary mobile-full mb-3" onclick="startCamera()">
+                <i class="fas fa-play"></i> Start Camera
+            </button>
             
-            <video id="video" width="640" height="480" autoplay muted style="border: 2px solid #007bff; border-radius: 10px; max-width: 100%; display: none;"></video>
+            <video id="video" width="640" height="480" autoplay muted 
+                   style="border: 2px solid #007bff; border-radius: 10px; max-width: 100%; display: none;"></video>
             <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
             
-            <div id="status" class="alert alert-info mt-3"><i class="fas fa-info-circle"></i> Click "Start Camera" to begin.</div>
+            <div id="status" class="alert alert-info mt-3">Waiting for admin to start kiosk...</div>
         </div>
     </div>
     
-    <p class="text-muted"><i class="fas fa-user-shield"></i> Admin: Set up in the morning. Refresh if needed.</p>
+    <p id="adminInfo" class="text-muted"></p>
 </div>
 
 <script>
     let stream = null;
+    let kioskActive = false;
+    
+    function checkKioskStatus() {
+        fetch('/kiosk_status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.active) {
+                    kioskActive = true;
+                    document.getElementById('adminInfo').innerText = 'Kiosk Active - Started by: ' + data.admin;
+                    document.getElementById('status').innerHTML = 'Click "Start Camera" to mark attendance.';
+                    document.getElementById('status').className = 'alert alert-info mt-3';
+                    if (!stream) {
+                        document.getElementById('startBtn').style.display = 'block';
+                    }
+                } else {
+                    kioskActive = false;
+                    document.getElementById('adminInfo').innerText = '';
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('status').innerHTML = '<i class="fas fa-exclamation-circle"></i> Kiosk is not started. Please contact admin.';
+                    document.getElementById('status').className = 'alert alert-warning mt-3';
+                    stopCamera();
+                }
+            })
+            .catch(err => console.error('Error:', err));
+    }
     
     async function startCamera() {
+        if (!kioskActive) return;
         try {
             stream = await navigator.mediaDevices.getUserMedia({ video: true });
             document.getElementById('video').srcObject = stream;
@@ -30,8 +59,7 @@
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('status').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Camera active. Capturing...';
             
-            // Capture and send every 3 seconds
-            setInterval(captureAndSend, 3000);
+            setTimeout(captureAndSend, 4000);
         } catch (err) {
             console.error('Camera error:', err);
             document.getElementById('status').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Camera access denied. Please allow permissions.';
@@ -56,14 +84,19 @@
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById('status').innerHTML = '<i class="fas fa-' + (data.status === 'success' ? 'check-circle text-success' : 'exclamation-triangle text-warning') + '"></i> ' + data.message;
+                document.getElementById('status').innerHTML = '<i class="fas fa-' + 
+                    (data.status === 'success' ? 'check-circle text-success' : 'exclamation-triangle text-warning') + 
+                    '"></i> ' + data.message;
                 if (data.status === 'success') {
                     setTimeout(() => stopCamera(), 2000);
+                } else {
+                    stopCamera();
                 }
             })
             .catch(err => {
                 console.error('Error:', err);
                 document.getElementById('status').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error processing.';
+                stopCamera();
             });
         }
     }
@@ -74,10 +107,16 @@
             stream = null;
         }
         document.getElementById('video').style.display = 'none';
-        document.getElementById('startBtn').style.display = 'block';
-        document.getElementById('status').innerHTML = '<i class="fas fa-info-circle"></i> Camera stopped.';
+        
+        if (kioskActive) {
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('status').innerHTML = 'Click "Start Camera" to mark attendance.';
+            document.getElementById('status').className = 'alert alert-info mt-3';
+        }
     }
     
+    setInterval(checkKioskStatus, 3000);
+    checkKioskStatus();
     window.addEventListener('beforeunload', stopCamera);
 </script>
 {% endblock %}
