@@ -75,23 +75,17 @@
             ctx.drawImage(video, 0, 0, 640, 480);
             const image = canvas.toDataURL('image/jpeg');
             
-            const formData = new FormData();
-            formData.append('image', image);
-            
             fetch('/mark_attendance_student', {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: image })
             })
             .then(response => response.json())
             .then(data => {
                 document.getElementById('status').innerHTML = '<i class="fas fa-' + 
                     (data.status === 'success' ? 'check-circle text-success' : 'exclamation-triangle text-warning') + 
                     '"></i> ' + data.message;
-                if (data.status === 'success') {
-                    setTimeout(() => stopCamera(), 2000);
-                } else {
-                    stopCamera();
-                }
+                stopCamera();
             })
             .catch(err => {
                 console.error('Error:', err);

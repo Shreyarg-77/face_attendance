@@ -318,34 +318,35 @@ def enroll_face(student_id):
 
 @app.route('/mark_attendance_student', methods=['POST'])
 def mark_attendance_student():
-    # Load known faces before processing
     load_known_faces()
-    
     try:
-        image_data = request.form['image']
+        data = request.get_json()
+        image_data = data.get('image')
         if not image_data:
             return jsonify({'status': 'error', 'message': 'No image data received.'})
-        
+
+        # Decode Base64 image
         image = base64.b64decode(image_data.split(',')[1])
         img = cv2.imdecode(np.frombuffer(image, np.uint8), cv2.IMREAD_COLOR)
-        
+
         if img is None:
             return jsonify({'status': 'error', 'message': 'Invalid image format.'})
-        
+
+        # Face detection
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-        
+
         if len(faces) > 0:
             orb = cv2.ORB_create()
             kp, des = orb.detectAndCompute(gray, None)
             if des is None:
                 return jsonify({'status': 'error', 'message': 'No features detected.'})
-            
+
             bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
             best_match = None
             best_score = 0
-            
+
             for i, known_des in enumerate(known_face_encodings):
                 if known_des is not None and len(known_des) > 0:
                     matches = bf.match(des, known_des)
@@ -353,7 +354,7 @@ def mark_attendance_student():
                     if score > best_score and score > 10:
                         best_score = score
                         best_match = known_face_student_ids[i]
-            
+
             if best_match:
                 student = Student.query.filter_by(id=best_match).first()
                 if student:
@@ -370,7 +371,7 @@ def mark_attendance_student():
             return jsonify({'status': 'error', 'message': 'Face not recognized.'})
         else:
             return jsonify({'status': 'error', 'message': 'No face detected.'})
-    
+
     except Exception as e:
         app.logger.error(f"Error: {e}")
         return jsonify({'status': 'error', 'message': 'Error processing.'})
