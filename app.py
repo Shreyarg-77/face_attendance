@@ -55,11 +55,11 @@ class Admin(UserMixin, db.Model):
 
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    class_name = db.Column(db.String(100))
-    enrolled_by_admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'))
-    encoding = db.Column(db.Text)  # Stores base64 image
-    class_display_id = db.Column(db.Integer)
+    name = db.Column(db.String(100), nullable=False)
+    class_name = db.Column(db.String(100), nullable=False)
+    class_display_id = db.Column(db.String(20))
+    encoding = db.Column(db.LargeBinary)
+    enrolled = db.Column(db.Boolean, default=False)
 
 class Attendance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -140,8 +140,9 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # If already logged in, show logout option
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        return render_template('login.html', already_logged_in=True)
     
     if request.method == 'POST':
         username = request.form['username']
@@ -161,7 +162,8 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('welcome'))
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('login'))
 
 @app.route('/dashboard')
 @login_required
@@ -557,6 +559,8 @@ def qr_code():
     return Response(buf.getvalue(), mimetype='image/png', headers={'Content-Disposition': 'attachment; filename=attendance_qr.png'})
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    with app.app_context():
+        db.create_all()
+        print("✅ Database initialized!")
+    app.run(debug=True)
    

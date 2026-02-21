@@ -10,6 +10,12 @@
             <p class="text-muted">Login to your admin dashboard</p>
         </div>
         
+        {% if already_logged_in %}
+        <div class="alert alert-warning">
+            <p>You are already logged in as <strong>{{ current_user.username }}</strong></p>
+            <a href="/logout" class="btn btn-danger">Logout to login with different account</a>
+        </div>
+        {% else %}
         <div class="card">
             <div class="card-header">
                 <h4><i class="fas fa-sign-in-alt"></i> Login</h4>
@@ -34,6 +40,7 @@
         <p class="text-center mt-3">
             New admin? <a href="/register">Register here</a>
         </p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
