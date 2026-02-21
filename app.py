@@ -406,20 +406,41 @@ def mark_attendance_student():
 @app.route('/insights')
 @login_required
 def insights():
-    attendance_per_student = db.session.query(Student.name, db.func.count(Attendance.id)).join(Attendance).filter(Student.class_name == current_user.class_name).group_by(Student.id, Student.name).order_by(db.func.count(Attendance.id).desc()).all()
+    try:
+        # Total records
+        total_records = Attendance.query.join(Student).filter(
+            Student.class_name == current_user.class_name
+        ).count()
+        
+        # Unique students
+        unique_students = db.session.query(Attendance.student_id).join(Student).filter(
+            Student.class_name == current_user.class_name
+        ).distinct().count()
+        
+        # Attendance per student
+        attendance_per_student = db.session.query(
+            Student.name,
+            db.func.count(Attendance.id)
+        ).join(Attendance, Student.id == Attendance.student_id).filter(
+            Student.class_name == current_user.class_name
+        ).group_by(Student.id, Student.name).all()
+        
+        insights_data = {
+            'total_records': total_records,
+            'unique_students': unique_students,
+            'attendance_per_student': attendance_per_student
+        }
+        
+        return render_template('insights.html', insights_data=insights_data)
     
-    totals = db.session.query(db.func.count(Attendance.id), db.func.count(db.distinct(Attendance.student_id))).join(Student).filter(Student.class_name == current_user.class_name).first()
-    total_records = totals[0] if totals else 0
-    unique_students = totals[1] if totals else 0
+    except Exception as e:
+        app.logger.error(f"Insights error: {e}")
+        return render_template('insights.html', insights_data={
+            'total_records': 0,
+            'unique_students': 0,
+            'attendance_per_student': []
+        })
     
-    insights_data = {
-        'total_records': total_records,
-        'unique_students': unique_students,
-        'attendance_per_student': attendance_per_student
-    }
-    
-    return render_template('insights.html', insights_data=insights_data, insights_json=json.dumps(insights_data))
-
 @app.route('/blacklist')
 @login_required
 def blacklist():
