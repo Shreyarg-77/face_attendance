@@ -120,11 +120,13 @@ def register():
         class_name = request.form['class_name']
         email = request.form.get('email', '')
         
+        # Check if username exists
         existing_admin = Admin.query.filter_by(username=username).first()
         if existing_admin:
             flash('Username already exists!', 'danger')
             return redirect(url_for('register'))
         
+        # Create new admin - NO id field
         new_admin = Admin(
             username=username,
             password=password,
@@ -132,11 +134,15 @@ def register():
             email=email
         )
         
-        db.session.add(new_admin)
-        db.session.commit()
-        
-        flash('Registration successful! Please login.', 'success')
-        return redirect(url_for('login'))  # ✅ Redirects to login
+        try:
+            db.session.add(new_admin)
+            db.session.commit()
+            flash('Registration successful! Please login.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error: {str(e)}', 'danger')
+            return redirect(url_for('register'))
     
     return render_template('register.html')
 
