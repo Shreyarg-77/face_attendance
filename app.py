@@ -415,6 +415,35 @@ def qr_code():
     
     return send_file(buf, mimetype='image/png')
 
+@app.route('/test_login', methods=['GET', 'POST'])
+def test_login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        admin = Admin.query.filter_by(username=username).first()
+        
+        if admin:
+            print(f"Found admin: {admin.username}")
+            print(f"Stored password: {admin.password}")
+            print(f"Input password: {password}")
+            print(f"Hash check: {check_password_hash(admin.password, password)}")
+            
+            if check_password_hash(admin.password, password):
+                return f"✅ Login successful for {admin.username}!"
+            else:
+                return "❌ Password mismatch!"
+        else:
+            return "❌ Admin not found!"
+    
+    return '''
+    <form method="POST">
+        <input type="text" name="username" placeholder="Username"><br>
+        <input type="password" name="password" placeholder="Password"><br>
+        <button type="submit">Test Login</button>
+    </form>
+    '''
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     with app.app_context():
