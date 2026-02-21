@@ -4,208 +4,213 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Attendance System{% endblock %}</title>
+
+    <!-- Bootstrap & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    body {
-        background: linear-gradient(135deg, #f1f3f5, #dee2e6);
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        padding: 20px;
-    }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f1f3f5, #dee2e6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
 
-    /* Main Card */
-    .auth-container {
-        background: #ffffff;
-        border-radius: 18px;
-        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15);
-        width: 100%;
-        max-width: 520px;   /* Better for laptops */
-        overflow: hidden;
-    }
-
-    /* Header */
-    .auth-header {
-        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-        color: #fff;
-        padding: 40px 30px;
-        text-align: center;
-    }
-
-    .auth-header h3 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        margin-bottom: 8px;
-    }
-
-    .auth-header p {
-        font-size: 1rem;
-        opacity: 0.9;
-    }
-
-    /* Body */
-    .auth-body {
-        padding: 35px 30px;
-    }
-
-    .form-label {
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 6px;
-        font-size: 0.95rem;
-    }
-
-    /* INPUT FIELDS – Bigger & Standard */
-    .form-control {
-        height: 48px;
-        border-radius: 10px;
-        padding: 10px 15px;
-        border: 1.6px solid #ced4da;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-        margin-bottom: 20px;
-    }
-
-    .form-control:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.2);
-    }
-
-    .form-control::placeholder {
-        color: #adb5bd;
-    }
-
-    /* Buttons */
-    .btn-primary {
-        background: #0d6efd;
-        border: none;
-        border-radius: 10px;
-        height: 48px;
-        font-size: 1rem;
-        font-weight: 600;
-        width: 100%;
-        transition: all 0.3s ease;
-        margin-top: 10px;
-    }
-
-    .btn-primary:hover {
-        background: #0b5ed7;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(13, 110, 253, 0.35);
-    }
-
-    .btn-outline-primary {
-        border-radius: 10px;
-        height: 48px;
-        font-size: 1rem;
-        font-weight: 600;
-        width: 100%;
-        margin-top: 12px;
-    }
-
-    /* Alerts */
-    .alert {
-        border-radius: 10px;
-        padding: 14px 16px;
-        margin-bottom: 20px;
-        font-size: 0.95rem;
-    }
-
-    /* Footer */
-    .auth-footer {
-        text-align: center;
-        padding: 0 30px 25px;
-        color: #6c757d;
-        font-size: 0.9rem;
-    }
-
-    /* Icons */
-    .welcome-icon {
-        font-size: 3.8rem;
-        margin-bottom: 12px;
-    }
-
-    .welcome-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-    }
-
-    .welcome-subtitle {
-        font-size: 1rem;
-        opacity: 0.9;
-    }
-
-    /* MOBILE OPTIMIZATION */
-    @media (max-width: 576px) {
+        /* ================= CARD ================= */
         .auth-container {
-            max-width: 100%;
+            width: 100%;
+            max-width: 520px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
         }
 
+        /* Desktop balance */
+        @media (min-width: 992px) {
+            .auth-container {
+                max-width: 650px;
+            }
+        }
+
+        /* ================= HEADER ================= */
         .auth-header {
-            padding: 30px 20px;
-        }
-
-        .auth-header h3 {
-            font-size: 1.45rem;
-        }
-
-        .auth-body {
-            padding: 25px 20px;
-        }
-
-        .form-control,
-        .btn-primary,
-        .btn-outline-primary {
-            height: 46px;
-            font-size: 0.95rem;
+            background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+            color: #ffffff;
+            text-align: center;
+            padding: 32px 26px;
         }
 
         .welcome-icon {
-            font-size: 3rem;
+            font-size: 3.2rem;
+            margin-bottom: 10px;
         }
-    }
-</style>
+
+        .welcome-title {
+            font-size: 1.45rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .welcome-subtitle {
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        /* ================= BODY ================= */
+        .auth-body {
+            padding: 28px 30px;
+        }
+
+        .form-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        /* Standard input look */
+        .form-control {
+            height: 50px;
+            padding: 12px 16px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 1.5px solid #cfd4da;
+            margin-bottom: 16px;
+            transition: all 0.25s ease;
+        }
+
+        .form-control:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.18);
+        }
+
+        .form-control::placeholder {
+            color: #adb5bd;
+        }
+
+        /* ================= BUTTONS ================= */
+        .btn-primary,
+        .btn-outline-primary {
+            height: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: #0d6efd;
+            border: none;
+            margin-top: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: #0b5ed7;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(13, 110, 253, 0.35);
+        }
+
+        .btn-outline-primary {
+            margin-top: 12px;
+        }
+
+        /* ================= ALERT ================= */
+        .alert {
+            font-size: 0.95rem;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 18px;
+        }
+
+        /* ================= FOOTER ================= */
+        .auth-footer {
+            text-align: center;
+            padding: 0 28px 22px;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        /* ================= MOBILE ================= */
+        @media (max-width: 576px) {
+            .auth-header {
+                padding: 26px 20px;
+            }
+
+            .auth-body {
+                padding: 24px 20px;
+            }
+
+            .welcome-icon {
+                font-size: 2.8rem;
+            }
+
+            .welcome-title {
+                font-size: 1.35rem;
+            }
+
+            .form-control,
+            .btn-primary,
+            .btn-outline-primary {
+                height: 46px;
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+
     {% block extra_css %}{% endblock %}
 </head>
+
 <body>
-    <div class="auth-container">
-        <div class="auth-header">
-            {% block header %}
-            <i class="fas fa-user-graduate welcome-icon"></i>
-            <h3 class="welcome-title">Face Recognition Attendance</h3>
-            <p class="welcome-subtitle">Secure, automated attendance tracking</p>
-            {% endblock %}
-        </div>
-        
-        <div class="auth-body">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            
-            {% block content %}{% endblock %}
-        </div>
-        
-        <div class="auth-footer">
-            {% block footer %}
-            <p>Automated Attendance Using Face Recognition</p>
-            {% endblock %}
-        </div>
+
+<div class="auth-container">
+
+    <!-- HEADER -->
+    <div class="auth-header">
+        {% block header %}
+        <i class="fas fa-user-graduate welcome-icon"></i>
+        <div class="welcome-title">Face Recognition Attendance</div>
+        <div class="welcome-subtitle">Secure, automated attendance tracking</div>
+        {% endblock %}
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    {% block extra_js %}{% endblock %}
+
+    <!-- BODY -->
+    <div class="auth-body">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="auth-footer">
+        {% block footer %}
+        Automated Attendance Using Face Recognition
+        {% endblock %}
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+
 </body>
 </html>
