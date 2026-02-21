@@ -48,14 +48,13 @@
         
         statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
         
-        const formData = new FormData();
-        formData.append('image', image);
-        
-        // FIX: Post to /capture_face/{{ student.id }} not window.location.href
+        // Send as JSON
         fetch('/capture_face/{{ student.id }}', {
             method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            body: formData
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ image: image })
         })
         .then(response => response.json())
         .then(data => {

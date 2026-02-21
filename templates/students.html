@@ -58,11 +58,14 @@
                         <td>
                             {% if not enrolled_status[student.id] %}
                             <a href="{{ url_for('enroll_face', id=student.id) }}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-camera"></i> Enroll Face
+                                <i class="fas fa-camera"></i> Enroll
                             </a>
                             {% endif %}
+                            <a href="{{ url_for('edit_student', id=student.id) }}" class="btn btn-sm btn-info">
+                                <i class="fas fa-edit"></i>
+                            </a>
                             <form action="{{ url_for('delete_student', id=student.id) }}" method="POST" style="display:inline;">
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this student?')">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>
