@@ -1,26 +1,39 @@
 {% extends 'base_public.html' %}
+
 {% block title %}Login - Attendance System{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-content-center mt-5">
     <div class="col-md-6 col-12">
+        <div class="text-center mb-4">
+            <h3><i class="fas fa-user-graduate text-primary"></i> Face Recognition Attendance</h3>
+            <p class="text-muted">Login to your admin dashboard</p>
+        </div>
+        
         <div class="card">
-            <div class="card-header mobile-center">
-                <h4><i class="fas fa-sign-in-alt"></i> Admin Login</h4>
+            <div class="card-header">
+                <h4><i class="fas fa-sign-in-alt"></i> Login</h4>
             </div>
             <div class="card-body">
                 <form method="POST">
                     <div class="mb-3">
-                        <label for="username" class="form-label"><i class="fas fa-user"></i> Username</label>
+                        <label for="username" class="form-label">Username</label>
                         <input type="text" name="username" class="form-control" id="username" required>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label"><i class="fas fa-lock"></i> Password</label>
+                        <label for="password" class="form-label">Password</label>
                         <input type="password" name="password" class="form-control" id="password" required>
                     </div>
-                    <button type="submit" class="btn btn-primary mobile-full"><i class="fas fa-sign-in-alt"></i> Login</button>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
                 </form>
             </div>
         </div>
+        
+        <p class="text-center mt-3">
+            New admin? <a href="/register">Register here</a>
+        </p>
     </div>
 </div>
 {% endblock %}

@@ -1,34 +1,47 @@
 {% extends 'base_public.html' %}
+
 {% block title %}Register Admin - Attendance System{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-content-center mt-5">
     <div class="col-md-6 col-12">
+        <div class="text-center mb-4">
+            <h3><i class="fas fa-user-graduate text-primary"></i> Face Recognition Attendance</h3>
+            <p class="text-muted">Create a new admin account</p>
+        </div>
+        
         <div class="card">
-            <div class="card-header mobile-center">
+            <div class="card-header">
                 <h4><i class="fas fa-user-plus"></i> Register New Admin</h4>
             </div>
             <div class="card-body">
                 <form method="POST">
                     <div class="mb-3">
-                        <label for="username" class="form-label"><i class="fas fa-user"></i> Username</label>
+                        <label for="username" class="form-label">Username</label>
                         <input type="text" name="username" class="form-control" id="username" required>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label"><i class="fas fa-lock"></i> Password</label>
+                        <label for="password" class="form-label">Password</label>
                         <input type="password" name="password" class="form-control" id="password" required>
                     </div>
                     <div class="mb-3">
-                        <label for="class_name" class="form-label"><i class="fas fa-school"></i> Class Name</label>
+                        <label for="class_name" class="form-label">Class Name</label>
                         <input type="text" name="class_name" class="form-control" id="class_name" required>
                     </div>
                     <div class="mb-3">
-                        <label for="email" class="form-label"><i class="fas fa-envelope"></i> Email (Optional)</label>
+                        <label for="email" class="form-label">Email (Optional)</label>
                         <input type="email" name="email" class="form-control" id="email">
                     </div>
-                    <button type="submit" class="btn btn-primary mobile-full"><i class="fas fa-plus"></i> Register</button>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-plus"></i> Register
+                    </button>
                 </form>
             </div>
         </div>
+        
+        <p class="text-center mt-3">
+            Already have an account? <a href="/login">Login here</a>
+        </p>
     </div>
 </div>
 {% endblock %}
