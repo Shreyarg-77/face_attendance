@@ -2,33 +2,24 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-import cv2  # For OpenCV face detection
-import numpy as np  # For numpy arrays
-import pickle
+import cv2
+import numpy as np
 import os
 from datetime import datetime, timedelta
-import json
 import csv
-from io import StringIO
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
-import time
+from io import StringIO, BytesIO
 import qrcode
-from io import BytesIO
 import logging
-import base64  # For image encoding
+import base64
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'  # Change this to a random string
+app.secret_key = 'your_secret_key_here'  # Change this!
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///models/attendance.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 logging.basicConfig(level=logging.INFO)
-app.logger.info("App starting...")
+logger = logging.getLogger(__name__)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -38,27 +29,24 @@ login_manager.login_view = 'login'
 if not os.path.exists('models'):
     os.makedirs('models')
 
-# Global variables for face recognition (using ORB descriptors)
-known_face_encodings = []  # List of ORB descriptors
+# Global variables for face recognition
+known_face_encodings = []
 known_face_student_ids = []
 
-# User class for Flask-Login
+# Models
 class Admin(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(200))
     class_name = db.Column(db.String(100))
     email = db.Column(db.String(100))
-    
-    def __repr__(self):
-        return f'<Admin {self.username}>'
 
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     class_name = db.Column(db.String(100), nullable=False)
     class_display_id = db.Column(db.String(20))
-    encoding = db.Column(db.LargeBinary)  # Store as bytes, not string
+    encoding = db.Column(db.LargeBinary)
     enrolled = db.Column(db.Boolean, default=False)
 
 class Attendance(db.Model):
@@ -78,44 +66,51 @@ class KioskStatus(db.Model):
 def load_user(user_id):
     return Admin.query.get(int(user_id))
 
-# Load known faces (ORB features)
+# FIXED: Load known faces with proper encoding handling
 def load_known_faces():
     global known_face_encodings, known_face_student_ids
     known_face_encodings = []
     known_face_student_ids = []
-    students = Student.query.filter(Student.encoding.isnot(None)).all()
-    orb = cv2.ORB_create()
-    for student in students:
-        try:
-            # Handle both bytes and string encodings for backward compatibility
-            encoding_data = student.encoding
-            if isinstance(encoding_data, str):
-                # If stored as string (old format), decode it
-                img_data = base64.b64decode(encoding_data)
-            else:
-                # If stored as bytes (new format), use directly
-                img_data = encoding_data
-            
-            img = cv2.imdecode(np.frombuffer(img_data, np.uint8), cv2.IMREAD_GRAYSCALE)
-            if img is not None:
-                kp, des = orb.detectAndCompute(img, None)
-                if des is not None:
-                    known_face_encodings.append(des)
-                    known_face_student_ids.append(student.id)
-        except Exception as e:
-            app.logger.warning(f"Could not load encoding for student {student.id}: {e}")
-            continue
-    app.logger.info(f"Loaded {len(known_face_encodings)} face features.")
+    
+    try:
+        students = Student.query.filter(Student.encoding.isnot(None)).all()
+        orb = cv2.ORB_create()
+        
+        for student in students:
+            try:
+                encoding_data = student.encoding
+                
+                # Handle both bytes and string encodings
+                if isinstance(encoding_data, str):
+                    img_data = base64.b64decode(encoding_data)
+                else:
+                    img_data = encoding_data
+                
+                img = cv2.imdecode(np.frombuffer(img_data, np.uint8), cv2.IMREAD_GRAYSCALE)
+                
+                if img is not None:
+                    kp, des = orb.detectAndCompute(img, None)
+                    if des is not None:
+                        known_face_encodings.append(des)
+                        known_face_student_ids.append(student.id)
+                        
+            except Exception as e:
+                logger.warning(f"Could not load encoding for student {student.id}: {e}")
+                continue
+                
+        logger.info(f"Loaded {len(known_face_encodings)} face features.")
+        
+    except Exception as e:
+        logger.error(f"Error loading known faces: {e}")
 
-# Create tables and load encodings on startup
-# Remove the time.sleep(10) as it can cause issues in production
+# Initialize database and load faces
 with app.app_context():
     try:
         db.create_all()
         load_known_faces()
-        app.logger.info("App initialized successfully.")
+        logger.info("App initialized successfully.")
     except Exception as e:
-        app.logger.error(f"Startup error: {e}")
+        logger.error(f"Startup error: {e}")
 
 # Routes
 @app.route('/')
@@ -130,13 +125,11 @@ def register():
         class_name = request.form['class_name']
         email = request.form.get('email', '')
         
-        # Check if username exists
         existing_admin = Admin.query.filter_by(username=username).first()
         if existing_admin:
             flash('Username already exists!', 'danger')
             return redirect(url_for('register'))
         
-        # Create new admin - NO id field
         new_admin = Admin(
             username=username,
             password=password,
@@ -154,7 +147,6 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # If already logged in, show logout option
     if current_user.is_authenticated:
         return render_template('login.html', already_logged_in=True)
     
@@ -182,17 +174,13 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Count total students for this admin's class
     total_students = Student.query.filter_by(class_name=current_user.class_name).count()
-    
-    # Count today's attendance for this admin's class
     today = datetime.now().strftime('%Y-%m-%d')
     todays_count = db.session.query(Attendance).join(Student).filter(
         Student.class_name == current_user.class_name,
         Attendance.date == today
     ).count()
     
-    # Check kiosk status
     kiosk = KioskStatus.query.first()
     kiosk_active = kiosk.active if kiosk else False
     kiosk_admin = kiosk.admin_info if kiosk else ''
@@ -244,8 +232,8 @@ def students():
         name = request.form['name']
         max_display_id = db.session.query(db.func.max(Student.class_display_id)).filter(Student.class_name == current_user.class_name).scalar() or 0
         class_display_id = max_display_id + 1
-        new_id = db.session.query(db.func.max(Student.id)).scalar() or 0 + 1
-        new_student = Student(id=new_id, name=name, class_name=current_user.class_name, enrolled_by_admin_id=current_user.id, class_display_id=class_display_id)
+        new_id = (db.session.query(db.func.max(Student.id)).scalar() or 0) + 1
+        new_student = Student(id=new_id, name=name, class_name=current_user.class_name, class_display_id=class_display_id)
         db.session.add(new_student)
         db.session.commit()
         flash('Student added!')
@@ -264,7 +252,6 @@ def delete_student(student_id):
     db.session.delete(student)
     db.session.commit()
     
-    # Re-order class_display_id for remaining students
     remaining_students = Student.query.filter_by(class_name=current_user.class_name).order_by(Student.class_display_id).all()
     for i, student in enumerate(remaining_students, start=1):
         student.class_display_id = i
@@ -301,11 +288,14 @@ def edit_student(student_id):
     
     return render_template('edit_student.html', student={'id': student_id, 'name': student.name, 'class_name': student.class_name})
 
+# FIXED: enroll_face - Store bytes directly, not as UTF-8 string
 @app.route('/enroll_face/<int:student_id>', methods=['GET', 'POST'])
 @login_required
 def enroll_face(student_id):
     student = Student.query.filter_by(id=student_id, class_name=current_user.class_name).first()
     if not student:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'status': 'error', 'message': 'Student not found or not in your class.'})
         flash('Student not found or not in your class.')
         return redirect(url_for('students'))
     
@@ -325,12 +315,19 @@ def enroll_face(student_id):
                 db.session.commit()
                 
                 load_known_faces()
+                
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'status': 'success', 'message': f'Face enrolled for {student.name}!'})
                 flash(f'Face enrolled for {student.name}!')
                 return redirect(url_for('students'))
             else:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({'status': 'error', 'message': 'No face detected. Try again.'})
                 flash('No face detected. Try again.')
         except Exception as e:
-            app.logger.error(f"Error processing image: {e}")
+            logger.error(f"Error processing image: {e}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'status': 'error', 'message': 'Error processing image.'})
             flash('Error processing image.')
     
     return render_template('enroll_face.html', student=student.name)
@@ -393,10 +390,7 @@ def mark_attendance_student():
             return jsonify({'status': 'error', 'message': 'Student not found.'})
 
         today = datetime.now().strftime('%Y-%m-%d')
-        
-        # FIX: Use time() instead of strftime for proper time storage
-        now = datetime.now()
-        time_now = now.strftime('%H:%M:%S')
+        time_now = datetime.now().strftime('%H:%M:%S')
 
         already_marked = Attendance.query.filter_by(
             student_id=best_match_id,
@@ -420,24 +414,21 @@ def mark_attendance_student():
         })
 
     except Exception as e:
-        app.logger.error(e)
+        logger.error(e)
         return jsonify({'status': 'error', 'message': 'Server error.'})
 
 @app.route('/insights')
 @login_required
 def insights():
     try:
-        # Total records
         total_records = Attendance.query.join(Student).filter(
             Student.class_name == current_user.class_name
         ).count()
         
-        # Unique students
         unique_students = db.session.query(Attendance.student_id).join(Student).filter(
             Student.class_name == current_user.class_name
         ).distinct().count()
         
-        # Attendance per student
         attendance_per_student = db.session.query(
             Student.name,
             db.func.count(Attendance.id)
@@ -454,12 +445,14 @@ def insights():
         return render_template('insights.html', insights_data=insights_data)
     
     except Exception as e:
-        app.logger.error(f"Insights error: {e}")
+        logger.error(f"Insights error: {e}")
         return render_template('insights.html', insights_data={
             'total_records': 0,
             'unique_students': 0,
             'attendance_per_student': []
         })
+
+
     
 @app.route('/blacklist')
 @login_required
@@ -479,7 +472,7 @@ def blacklist():
             Attendance.date.between(week_start_str, week_end_str)
         ).count()
         
-        percentage = (attendance_count / 5) * 100 if 5 > 0 else 0
+        percentage = (attendance_count / 5) * 100
         
         if percentage < 50:
             blacklisted_students.append({
@@ -548,7 +541,6 @@ def export_attendance_csv():
     output.seek(0)
     return Response(output.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment; filename=attendance.csv'})
 
-
 @app.route('/qr_code')
 @login_required
 def qr_code():
@@ -566,3 +558,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True, host='0.0.0.0', port=5000)
+
