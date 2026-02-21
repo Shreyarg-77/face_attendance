@@ -1,53 +1,80 @@
 {% extends 'base.html' %}
-
+{% block title %}Students - Attendance System{% endblock %}
 {% block content %}
-<div class="container mt-5">
-    <h2 class="text-center mb-4">Manage Students - {{ current_user.class_name }}</h2>
-    
-    <!-- Add Student Form -->
-    <form method="POST" class="mb-4">
-        <div class="input-group">
-            <input type="text" name="name" class="form-control" placeholder="Enter student name" required>
-            <button type="submit" class="btn btn-success">Add Student</button>
+<h3 class="text-center mb-4"><i class="fas fa-users"></i> Students</h3>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="fas fa-plus-circle"></i> Add New Student</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" class="row mobile-stack">
+            <div class="col-md-6 col-12 mb-2">
+                <input type="text" name="name" class="form-control" placeholder="Student Name" required>
+            </div>
+            <div class="col-md-auto col-12 mb-2">
+                <button type="submit" class="btn btn-primary mobile-full"><i class="fas fa-plus"></i> Add Student</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-list"></i> Student List</h5>
+    </div>
+    <div class="card-body">
+        {% if students %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ student.class_display_id }}</td>
+                        <td>{{ student.name }}</td>
+                        <td>
+                            {% if enrolled_status[student.id] %}
+                            <span class="badge bg-success">Enrolled</span>
+                            {% else %}
+                            <span class="badge bg-warning">Not Enrolled</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not enrolled_status[student.id] %}
+                            <a href="{{ url_for('enroll_face', id=student.id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-camera"></i> Enroll Face
+                            </a>
+                            {% endif %}
+                            <form action="{{ url_for('delete_student', id=student.id) }}" method="POST" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this student?')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-    </form>
-    
-    <!-- Students Table -->
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Class ID</th>
-                <th>Name</th>
-                <th>Enrolled</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for student in students %}
-            <tr>
-                <td>{{ student.class_display_id }}</td>
-                <td>{{ student.name }}</td>
-                <td>
-                    {% if enrolled_status[student.id] %}
-                        <span class="badge bg-success">Yes</span>
-                    {% else %}
-                        <span class="badge bg-warning">No</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if not enrolled_status[student.id] %}
-                    <a href="{{ url_for('enroll_face', student_id=student.id) }}" class="btn btn-primary btn-sm"><i class="fas fa-camera"></i> Enroll</a>
-                    {% else %}
-                    <button class="btn btn-secondary btn-sm" disabled><i class="fas fa-check"></i> Enrolled</button>
-                    {% endif %}
-                    <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i> Edit</a>
-                    <form method="POST" action="{{ url_for('delete_student', student_id=student.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure?')">
-                        <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        {% else %}
+        <p class="text-muted text-center">No students added yet.</p>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

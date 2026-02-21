@@ -139,7 +139,6 @@ def students():
         name = request.form['name']
         class_name = current_user.class_name
         
-        # Get next display ID
         last_student = Student.query.filter_by(class_name=class_name).order_by(Student.id.desc()).first()
         new_id = (last_student.class_display_id if last_student else '0')
         new_num = int(new_id) + 1 if new_id.isdigit() else 1
@@ -152,11 +151,14 @@ def students():
         return redirect(url_for('enroll_face', id=new_student.id))
     
     students_list = Student.query.filter_by(class_name=current_user.class_name).all()
-    # Add enrolled status to each student object
-    for s in students_list:
-        s.enrolled_status = 'Enrolled' if s.enrolled else 'Not Enrolled'
     
-    return render_template('students.html', students=students_list)
+    # Create enrolled_status dictionary
+    enrolled_status = {}
+    for s in students_list:
+        enrolled_status[s.id] = s.enrolled
+    
+    return render_template('students.html', students=students_list, enrolled_status=enrolled_status)
+
 
 @app.route('/enroll_face/<int:id>')
 @login_required
