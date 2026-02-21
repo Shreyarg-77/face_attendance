@@ -45,7 +45,7 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
     'pool_timeout': 30
 }
-app.config['WTF_CSRF_ENABLED'] = True
+
 
 db = SQLAlchemy(app)
 
