@@ -1,24 +1,53 @@
-{% extends 'base.html' %}
-{% block title %}Student Kiosk{% endblock %}
-{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Kiosk</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .kiosk-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 700px;
+            width: 100%;
+        }
+        #video {
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body>
 
-<div class="text-center">
-    <h3 class="mb-3"><i class="fas fa-camera"></i> Attendance Kiosk</h3>
+<div class="kiosk-container">
+    <div class="text-center">
+        <h3 class="mb-3"><i class="fas fa-camera"></i> Attendanceh3>
 
-    <button id="startBtn" class="btn btn-primary mb-3" onclick="startCamera()" style="display:none;">
-        <i class="fas fa-play"></i> Start Camera
-    </button>
+        <button id=" Kiosk</startBtn" class="btn btn-primary btn-lg mb-3" onclick="startCamera()" style="display:none;">
+            <i class="fas fa-play"></i> Start Camera
+        </button>
 
-    <video id="video" width="640" height="480" autoplay muted
-           style="display:none; border:2px solid #007bff; border-radius:10px;"></video>
+        <video id="video" width="640" height="480" autoplay muted
+               style="display:none; border:3px solid #28a745; border-radius:15px;"></video>
 
-    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+        <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
 
-    <div id="status" class="alert alert-info mt-3">
-        Waiting for admin to start kiosk...
+        <div id="status" class="alert alert-info mt-3">
+            Waiting for admin to start kiosk...
+        </div>
+
+        <p id="adminInfo" class="text-muted mt-3"></p>
     </div>
-
-    <p id="adminInfo" class="text-muted"></p>
 </div>
 
 <script>
@@ -37,10 +66,12 @@ function checkKioskStatus() {
                 document.getElementById('startBtn').style.display = 'inline-block';
                 document.getElementById('status').innerHTML =
                     'Click "Start Camera" to mark attendance.';
+                document.getElementById('status').className = 'alert alert-primary mt-3';
             } else {
                 document.getElementById('startBtn').style.display = 'none';
                 document.getElementById('status').innerHTML =
                     'Kiosk not active. Contact admin.';
+                document.getElementById('status').className = 'alert alert-warning mt-3';
                 stopCamera();
             }
         });
@@ -58,6 +89,7 @@ async function startCamera() {
 
     document.getElementById('status').innerHTML =
         '<i class="fas fa-spinner fa-spin"></i> Capturing face...';
+    document.getElementById('status').className = 'alert alert-success mt-3';
 
     setTimeout(captureAndSend, 4000);
 }
@@ -92,10 +124,9 @@ function captureAndSend() {
 
         stopCamera();
 
-        // Ready for next student
         setTimeout(() => {
             if (kioskActive) {
-                status.className = 'alert alert-info mt-3';
+                status.className = 'alert alert-primary mt-3';
                 status.innerHTML = 'Click "Start Camera" to mark attendance.';
                 document.getElementById('startBtn').style.display = 'inline-block';
             }
@@ -115,4 +146,5 @@ setInterval(checkKioskStatus, 3000);
 checkKioskStatus();
 </script>
 
-{% endblock %}
+</body>
+</html>
