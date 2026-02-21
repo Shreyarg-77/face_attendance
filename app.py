@@ -130,28 +130,31 @@ def register():
             email=email
         )
         
-        try:
-            db.session.add(new_admin)
-            db.session.commit()
-            flash('Registration successful! Please login.', 'success')
-            return redirect(url_for('login'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error: {str(e)}', 'danger')
-            return redirect(url_for('register'))
+        db.session.add(new_admin)
+        db.session.commit()
+        
+        flash('Registration successful! Please login.', 'success')
+        return redirect(url_for('login'))
     
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        user = Admin.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password, password):
-            login_user(user)
+        
+        admin = Admin.query.filter_by(username=username).first()
+        
+        if admin and check_password_hash(admin.password, password):
+            login_user(admin)
             return redirect(url_for('dashboard'))
-        flash('Invalid credentials.')
+        else:
+            flash('Invalid username or password!', 'danger')
+    
     return render_template('login.html')
 
 @app.route('/logout')
