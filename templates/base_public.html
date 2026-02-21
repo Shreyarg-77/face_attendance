@@ -2,176 +2,142 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Attendance System{% endblock %}</title>
-
-    <!-- Bootstrap & Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Face Recognition Attendance</title>
 
     <style>
-        body {
+        * {
             margin: 0;
-            min-height: 100vh;
-            background-color: #f5f7fb;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Segoe UI", sans-serif;
+        }
+
+        body {
+            background: #f4f7fb;
+            color: #333;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #1e6fff, #0d47c1);
+            padding: 16px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .header-content {
+            max-width: 1100px;
+            margin: auto;
+            padding: 0 20px;
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            color: white;
         }
 
-        /* ================= HEADER ================= */
-        .page-header {
-            background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-            color: #fff;
-            padding: 40px 20px;
-            text-align: center;
+        .header-content h1 {
+            font-size: 22px;
+            font-weight: 600;
         }
 
-        .page-header i {
-            font-size: 3.5rem;
-            margin-bottom: 10px;
+        .logo {
+            font-size: 26px;
         }
 
-        .page-header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        .page-header p {
-            font-size: 1rem;
-            opacity: 0.9;
-        }
-
-        /* ================= MAIN CONTENT ================= */
-        .page-content {
-            flex: 1;
+        /* Main Container */
+        main {
+            height: calc(100vh - 70px);
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 40px 20px;
+            animation: fadeUp 0.8s ease;
         }
 
-        /* THIS CONTROLS WIDTH */
-        .form-wrapper {
+        /* Content Card */
+        .card {
+            background: white;
             width: 100%;
-            max-width: 1000px;   /* WIDE FORM */
-            margin: auto;
-        }
-
-        h3 {
-            font-weight: 700;
-            margin-bottom: 25px;
+            max-width: 420px;
+            padding: 35px;
+            border-radius: 14px;
             text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
         }
 
-        .form-label {
-            font-weight: 600;
-            margin-bottom: 6px;
-            font-size: 0.95rem;
+        .card h2 {
+            font-size: 26px;
+            margin-bottom: 10px;
         }
 
-        /* ================= INPUTS ================= */
-        .form-control {
-            width: 100%;
-            height: 54px;
-            font-size: 1rem;
-            padding: 12px 18px;
-            border-radius: 8px;
-            border: 1.5px solid #cfd4da;
-            margin-bottom: 22px;
+        .card p {
+            font-size: 15px;
+            color: #666;
+            margin-bottom: 30px;
         }
 
-        .form-control:focus {
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.2);
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
 
-        /* ================= BUTTONS ================= */
-        .btn-primary,
-        .btn-outline-primary {
-            width: 100%;
-            height: 54px;
-            font-size: 1rem;
-            font-weight: 600;
-            border-radius: 8px;
+        .btn {
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 16px;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
         }
 
         .btn-primary {
-            margin-top: 10px;
+            background: #1e6fff;
+            color: white;
         }
 
-        /* ================= FOOTER ================= */
-        .page-footer {
-            text-align: center;
-            padding: 15px;
-            font-size: 0.9rem;
-            color: #6c757d;
+        .btn-primary:hover {
+            background: #1558cc;
+            transform: translateY(-2px);
         }
 
-        /* ================= MOBILE ================= */
-        @media (max-width: 576px) {
-            .page-header h1 {
-                font-size: 1.6rem;
-            }
+        .btn-outline {
+            border: 2px solid #1e6fff;
+            color: #1e6fff;
+            background: transparent;
+        }
 
-            .page-header i {
-                font-size: 3rem;
-            }
+        .btn-outline:hover {
+            background: #1e6fff;
+            color: white;
+        }
 
-            .form-wrapper {
-                max-width: 100%;
+        /* Animation */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
             }
-
-            .form-control,
-            .btn-primary,
-            .btn-outline-primary {
-                height: 48px;
-                font-size: 0.95rem;
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
     </style>
-
-    {% block extra_css %}{% endblock %}
 </head>
-
 <body>
 
-<!-- HEADER -->
-<div class="page-header">
-    {% block header %}
-    <i class="fas fa-user-graduate"></i>
-    <h1>Face Recognition Attendance</h1>
-    <p>Secure, automated attendance tracking</p>
-    {% endblock %}
-</div>
-
-<!-- MAIN CONTENT -->
-<div class="page-content">
-    <div class="form-wrapper">
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        {% block content %}{% endblock %}
-
+<header>
+    <div class="header-content">
+        <span class="logo">🎓</span>
+        <h1>Face Recognition Attendance</h1>
     </div>
-</div>
+</header>
 
-<!-- FOOTER -->
-<div class="page-footer">
-    {% block footer %}
-    Automated Attendance Using Face Recognition
+<main>
+    {% block content %}
+    <!-- Child templates content here -->
     {% endblock %}
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-{% block extra_js %}{% endblock %}
+</main>
 
 </body>
 </html>
