@@ -319,7 +319,6 @@ def enroll_face(student_id):
 def mark_attendance_student():
     load_known_faces()
     try:
-        # Handle both JSON and form data
         if request.is_json:
             data = request.get_json()
             image_data = data.get('image')
@@ -329,14 +328,12 @@ def mark_attendance_student():
         if not image_data:
             return jsonify({'status': 'error', 'message': 'No image received.'})
 
-        # Decode Base64 image
         image_bytes = base64.b64decode(image_data.split(',')[1])
         img = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
 
         if img is None:
             return jsonify({'status': 'error', 'message': 'Invalid image.'})
 
-        # Face detection
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         face_cascade = cv2.CascadeClassifier(
             cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
@@ -346,11 +343,9 @@ def mark_attendance_student():
         if len(faces) == 0:
             return jsonify({'status': 'error', 'message': 'No face detected.'})
 
-        # Take first detected face
         x, y, w, h = faces[0]
         face_roi = gray[y:y+h, x:x+w]
 
-        # Feature extraction
         orb = cv2.ORB_create()
         kp, des = orb.detectAndCompute(face_roi, None)
 
@@ -378,7 +373,10 @@ def mark_attendance_student():
             return jsonify({'status': 'error', 'message': 'Student not found.'})
 
         today = datetime.now().strftime('%Y-%m-%d')
-        time_now = datetime.now().strftime('%H:%M:%S')
+        
+        # FIX: Use time() instead of strftime for proper time storage
+        now = datetime.now()
+        time_now = now.strftime('%H:%M:%S')
 
         already_marked = Attendance.query.filter_by(
             student_id=best_match_id,
