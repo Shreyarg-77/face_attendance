@@ -315,66 +315,95 @@ def enroll_face(student_id):
             flash('Error processing image.')
     return render_template('enroll_face.html', student=student.name)
 
-
 @app.route('/mark_attendance_student', methods=['POST'])
 def mark_attendance_student():
     load_known_faces()
     try:
-        data = request.get_json()
-        image_data = data.get('image')
+        # Handle both JSON and form data
+        if request.is_json:
+            data = request.get_json()
+            image_data = data.get('image')
+        else:
+            image_data = request.form.get('image')
+
         if not image_data:
-            return jsonify({'status': 'error', 'message': 'No image data received.'})
+            return jsonify({'status': 'error', 'message': 'No image received.'})
 
         # Decode Base64 image
-        image = base64.b64decode(image_data.split(',')[1])
-        img = cv2.imdecode(np.frombuffer(image, np.uint8), cv2.IMREAD_COLOR)
+        image_bytes = base64.b64decode(image_data.split(',')[1])
+        img = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
 
         if img is None:
-            return jsonify({'status': 'error', 'message': 'Invalid image format.'})
+            return jsonify({'status': 'error', 'message': 'Invalid image.'})
 
         # Face detection
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+        face_cascade = cv2.CascadeClassifier(
+            cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+        )
+        faces = face_cascade.detectMultiScale(gray, 1.1, 5)
 
-        if len(faces) > 0:
-            orb = cv2.ORB_create()
-            kp, des = orb.detectAndCompute(gray, None)
-            if des is None:
-                return jsonify({'status': 'error', 'message': 'No features detected.'})
-
-            bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-            best_match = None
-            best_score = 0
-
-            for i, known_des in enumerate(known_face_encodings):
-                if known_des is not None and len(known_des) > 0:
-                    matches = bf.match(des, known_des)
-                    score = len(matches)
-                    if score > best_score and score > 10:
-                        best_score = score
-                        best_match = known_face_student_ids[i]
-
-            if best_match:
-                student = Student.query.filter_by(id=best_match).first()
-                if student:
-                    now = datetime.now()
-                    date = now.strftime('%Y-%m-%d')
-                    time_str = now.strftime('%H:%M:%S')
-                    existing = Attendance.query.filter_by(student_id=best_match, date=date).first()
-                    if not existing:
-                        new_attendance = Attendance(student_id=best_match, date=date, time=time_str)
-                        db.session.add(new_attendance)
-                        db.session.commit()
-                        return jsonify({'status': 'success', 'message': f'Attendance marked for {student.name}!'})
-                    return jsonify({'status': 'info', 'message': 'Already marked today.'})
-            return jsonify({'status': 'error', 'message': 'Face not recognized.'})
-        else:
+        if len(faces) == 0:
             return jsonify({'status': 'error', 'message': 'No face detected.'})
 
+        # Take first detected face
+        x, y, w, h = faces[0]
+        face_roi = gray[y:y+h, x:x+w]
+
+        # Feature extraction
+        orb = cv2.ORB_create()
+        kp, des = orb.detectAndCompute(face_roi, None)
+
+        if des is None:
+            return jsonify({'status': 'error', 'message': 'Face features not clear.'})
+
+        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        best_match_id = None
+        best_score = 0
+
+        for i, known_des in enumerate(known_face_encodings):
+            if known_des is not None:
+                matches = bf.match(des, known_des)
+                score = len(matches)
+
+                if score > best_score and score > 15:
+                    best_score = score
+                    best_match_id = known_face_student_ids[i]
+
+        if not best_match_id:
+            return jsonify({'status': 'error', 'message': 'Face not recognized.'})
+
+        student = Student.query.filter_by(id=best_match_id).first()
+        if not student:
+            return jsonify({'status': 'error', 'message': 'Student not found.'})
+
+        today = datetime.now().strftime('%Y-%m-%d')
+        time_now = datetime.now().strftime('%H:%M:%S')
+
+        already_marked = Attendance.query.filter_by(
+            student_id=best_match_id,
+            date=today
+        ).first()
+
+        if already_marked:
+            return jsonify({'status': 'info', 'message': 'Attendance already marked today.'})
+
+        new_attendance = Attendance(
+            student_id=best_match_id,
+            date=today,
+            time=time_now
+        )
+        db.session.add(new_attendance)
+        db.session.commit()
+
+        return jsonify({
+            'status': 'success',
+            'message': f'Attendance marked for {student.name}'
+        })
+
     except Exception as e:
-        app.logger.error(f"Error: {e}")
-        return jsonify({'status': 'error', 'message': 'Error processing.'})
+        app.logger.error(e)
+        return jsonify({'status': 'error', 'message': 'Server error.'})
 
 @app.route('/insights')
 @login_required
