@@ -13,13 +13,13 @@
         body {
             margin: 0;
             min-height: 100vh;
-            background: #f4f6f9;
+            background-color: #f5f7fb;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
         }
 
-        /* ===== HEADER ===== */
+        /* ================= HEADER ================= */
         .page-header {
             background: linear-gradient(135deg, #0d6efd, #0b5ed7);
             color: #fff;
@@ -35,7 +35,7 @@
         .page-header h1 {
             font-size: 2rem;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .page-header p {
@@ -43,7 +43,7 @@
             opacity: 0.9;
         }
 
-        /* ===== MAIN CONTENT ===== */
+        /* ================= MAIN CONTENT ================= */
         .page-content {
             flex: 1;
             display: flex;
@@ -52,9 +52,11 @@
             padding: 40px 20px;
         }
 
+        /* THIS CONTROLS WIDTH */
         .form-wrapper {
             width: 100%;
-            max-width: 700px;   /* LONGER INPUTS */
+            max-width: 1000px;   /* WIDE FORM */
+            margin: auto;
         }
 
         h3 {
@@ -66,15 +68,18 @@
         .form-label {
             font-weight: 600;
             margin-bottom: 6px;
+            font-size: 0.95rem;
         }
 
+        /* ================= INPUTS ================= */
         .form-control {
-            height: 52px;
+            width: 100%;
+            height: 54px;
             font-size: 1rem;
-            padding: 12px 16px;
+            padding: 12px 18px;
             border-radius: 8px;
             border: 1.5px solid #cfd4da;
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
         .form-control:focus {
@@ -82,12 +87,13 @@
             box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.2);
         }
 
+        /* ================= BUTTONS ================= */
         .btn-primary,
         .btn-outline-primary {
-            height: 52px;
+            width: 100%;
+            height: 54px;
             font-size: 1rem;
             font-weight: 600;
-            width: 100%;
             border-radius: 8px;
         }
 
@@ -95,7 +101,7 @@
             margin-top: 10px;
         }
 
-        /* ===== FOOTER ===== */
+        /* ================= FOOTER ================= */
         .page-footer {
             text-align: center;
             padding: 15px;
@@ -103,7 +109,7 @@
             color: #6c757d;
         }
 
-        /* ===== MOBILE ===== */
+        /* ================= MOBILE ================= */
         @media (max-width: 576px) {
             .page-header h1 {
                 font-size: 1.6rem;
@@ -140,7 +146,7 @@
     {% endblock %}
 </div>
 
-<!-- CONTENT -->
+<!-- MAIN CONTENT -->
 <div class="page-content">
     <div class="form-wrapper">
 
