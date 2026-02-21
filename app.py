@@ -558,6 +558,42 @@ def qr_code():
     buf.seek(0)
     return Response(buf.getvalue(), mimetype='image/png', headers={'Content-Disposition': 'attachment; filename=attendance_qr.png'})
 
+def migrate_database():
+    """Add missing columns to existing tables"""
+    try:
+        # Check if 'enrolled' column exists in student table
+        result = db.session.execute(db.text("""
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name='student' AND column_name='enrolled'
+        """)).fetchone()
+        
+        if not result:
+            # Add the column
+            db.session.execute(db.text("ALTER TABLE student ADD COLUMN enrolled BOOLEAN DEFAULT FALSE"))
+            db.session.commit()
+            print("✅ Added 'enrolled' column to student table")
+        
+        # Check if 'class_display_id' column exists
+        result = db.session.execute(db.text("""
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name='student' AND column_name='class_display_id'
+        """)).fetchone()
+        
+        if not result:
+            db.session.execute(db.text("ALTER TABLE student ADD COLUMN class_display_id VARCHAR(20)"))
+            db.session.commit()
+            print("✅ Added 'class_display_id' column to student table")
+            
+    except Exception as e:
+        print(f"Migration error: {e}")
+        db.session.rollback()
+
+# Call migration before starting app
+with app.app_context():
+    db.create_all()
+    migrate_database()
+
+    
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
