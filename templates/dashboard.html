@@ -1,7 +1,10 @@
 {% extends 'base.html' %}
+
 {% block title %}Dashboard - Attendance System{% endblock %}
+
 {% block content %}
 <h2 class="text-center mb-4"><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+
 <div class="row mobile-stack">
     <div class="col-12 col-md-4">
         <div class="card text-center h-100">
@@ -13,6 +16,7 @@
             </div>
         </div>
     </div>
+    
     <div class="col-12 col-md-4">
         <div class="card text-center h-100">
             <div class="card-body d-flex flex-column">
@@ -23,24 +27,48 @@
             </div>
         </div>
     </div>
+    
     <div class="col-12 col-md-4">
-    <div class="card text-center h-100">
-        <div class="card-body d-flex flex-column">
-            <i class="fas fa-play-circle fa-3x text-warning mb-3"></i>
-            <h5 class="card-title">Kiosk Mode</h5>
-            <p class="card-text flex-grow-1">Launch face recognition mode.</p>
-            {% if kiosk_active %}
-            <button onclick="stopKiosk()" class="btn btn-danger mt-auto"><i class="fas fa-stop"></i> Stop Kiosk</button>
-            <small class="text-muted">Active by: {{ kiosk_admin }}</small>
-            {% else %}
-            <button onclick="openKioskDisplay()" class="btn btn-warning mt-auto"><i class="fas fa-play"></i> Start Kiosk</button>
-            {% endif %}
+        <div class="card text-center h-100">
+            <div class="card-body d-flex flex-column">
+                <i class="fas fa-play-circle fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">Kiosk Mode</h5>
+                <p class="card-text flex-grow-1">Launch face recognition mode.</p>
+                {% if kiosk_active %}
+                <button onclick="stopKiosk()" class="btn btn-danger mt-auto"><i class="fas fa-stop"></i> Stop Kiosk</button>
+                <small class="text-muted">Active by: {{ kiosk_admin }}</small>
+                {% else %}
+                <button onclick="openKioskDisplay()" class="btn btn-warning mt-auto"><i class="fas fa-play"></i> Start Kiosk</button>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
+
+<div class="row mobile-stack mt-3">
+    <div class="col-12 col-md-4">
+        <div class="card text-center h-100">
+            <div class="card-body d-flex flex-column">
+                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                <h5 class="card-title">Blacklist</h5>
+                <p class="card-text flex-grow-1">View students with low attendance.</p>
+                <a href="/blacklist" class="btn btn-danger mt-auto"><i class="fas fa-arrow-right"></i> Go</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-md-4">
+        <div class="card text-center h-100">
+            <div class="card-body d-flex flex-column">
+                <i class="fas fa-chart-bar fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Insights</h5>
+                <p class="card-text flex-grow-1">View attendance analytics.</p>
+                <a href="/insights" class="btn btn-info mt-auto"><i class="fas fa-arrow-right"></i> Go</a>
+            </div>
+        </div>
+    </div>
 </div>
-</div>
-</div>
+
 <div class="row mt-4">
     <div class="col-12">
         <div class="alert alert-info mobile-center">
@@ -49,9 +77,10 @@
         </div>
     </div>
 </div>
+
 <div class="row mt-4">
     <div class="col-12">
-        <button class="btn btn-info mobile-full" type="button" data-bs-toggle="collapse" data-bs-target="#qrSection">
+        <button class="btn btn-secondary mobile-full" type="button" data-bs-toggle="collapse" data-bs-target="#qrSection">
             <i class="fas fa-qrcode"></i> Access QR Code
         </button>
         <div class="collapse mt-3" id="qrSection">
@@ -65,6 +94,7 @@
         </div>
     </div>
 </div>
+
 <script>
     function openKioskDisplay() {
         fetch('/kiosk_status', { 
@@ -76,7 +106,7 @@
             if (data.status === 'already_active') {
                 alert(data.message);
             } else if (data.status === 'active') {
-                alert('Kiosk started! The kiosk device will automatically activate.');
+                alert('Kiosk started!');
                 location.reload();
             } else {
                 alert('Error starting kiosk.');
@@ -99,4 +129,3 @@
     }
 </script>
 {% endblock %}
-

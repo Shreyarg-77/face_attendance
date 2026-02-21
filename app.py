@@ -452,13 +452,29 @@ def blacklist():
     
     students_list = Student.query.filter_by(class_name=current_user.class_name).all()
     blacklisted_students = []
-    for student in students_list:
-        attendance_count = Attendance.query.filter(Attendance.student_id == student.id, Attendance.date.between(week_start_str, week_end_str)).count()
-        percentage = (attendance_count / 5) * 100 if 5 > 0 else 0
-        if percentage < 50:
-            blacklisted_students.append((student.id, student.name, attendance_count, round(percentage, 1)))
     
-    return render_template('blacklist.html', blacklisted_students=blacklisted_students, week_start=week_start_str, week_end=week_end_str)
+    for student in students_list:
+        attendance_count = Attendance.query.filter(
+            Attendance.student_id == student.id,
+            Attendance.date.between(week_start_str, week_end_str)
+        ).count()
+        
+        percentage = (attendance_count / 5) * 100 if 5 > 0 else 0
+        
+        if percentage < 50:
+            blacklisted_students.append({
+                'id': student.id,
+                'name': student.name,
+                'days': attendance_count,
+                'percentage': round(percentage, 1)
+            })
+    
+    return render_template(
+        'blacklist.html', 
+        blacklisted_students=blacklisted_students, 
+        week_start=week_start_str, 
+        week_end=week_end_str
+    )
 
 @app.route('/kiosk_status', methods=['GET', 'POST', 'DELETE'])
 @login_required

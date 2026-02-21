@@ -1,13 +1,18 @@
 {% extends 'base.html' %}
+
 {% block title %}Blacklist - Attendance System{% endblock %}
+
 {% block content %}
-<h3 class="text-center mb-4"><i class="fas fa-exclamation-triangle"></i> Weekly Blacklist ({{ week_start }} to {{ week_end }})</h3>
-<p class="text-muted text-center">Students with low attendance (<50%) this week.</p>
+<h3 class="text-center mb-4"><i class="fas fa-exclamation-triangle"></i> Weekly Blacklist</h3>
+<p class="text-muted text-center">{{ week_start }} to {{ week_end }}</p>
+<p class="text-muted text-center">Students with attendance below 50% this week.</p>
+
 <div class="card">
     <div class="card-header">
         <h5><i class="fas fa-users"></i> Students with Low Attendance</h5>
     </div>
     <div class="card-body">
+        {% if blacklisted_students|length > 0 %}
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
@@ -21,17 +26,26 @@
                 <tbody>
                     {% for student in blacklisted_students %}
                     <tr>
-                        <td>{{ student[0] }}</td>
-                        <td>{{ student[1] }}</td>
-                        <td>{{ student[2] }}/5</td>
-                        <td>{{ student[3] }}%</td>
+                        <td>{{ student.id }}</td>
+                        <td>{{ student.name }}</td>
+                        <td>{{ student.days }}/5</td>
+                        <td>
+                            {% if student.percentage < 25 %}
+                            <span class="badge bg-danger">{{ student.percentage }}%</span>
+                            {% elif student.percentage < 50 %}
+                            <span class="badge bg-warning">{{ student.percentage }}%</span>
+                            {% else %}
+                            <span class="badge bg-success">{{ student.percentage }}%</span>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        {% if blacklisted_students|length == 0 %}
-        <p class="text-muted text-center"><i class="fas fa-check-circle"></i> No students with low attendance this week.</p>
+        {% else %}
+        <p class="text-muted text-center"><i class="fas fa-check-circle"></i> All students have good attendance this week!</p>
         {% endif %}
     </div>
 </div>
+{% endblock %}
