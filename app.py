@@ -49,13 +49,9 @@ class Admin(UserMixin, db.Model):
     password = db.Column(db.String(200))
     class_name = db.Column(db.String(100))
     email = db.Column(db.String(100))
-
-    def __init__(self, id, username, password, class_name, email=None):
-        self.id = id
-        self.username = username
-        self.password = password
-        self.class_name = class_name
-        self.email = email
+    
+    def __repr__(self):
+        return f'<Admin {self.username}>'
 
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
