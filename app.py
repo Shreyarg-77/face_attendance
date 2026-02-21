@@ -58,7 +58,7 @@ class Student(db.Model):
     name = db.Column(db.String(100), nullable=False)
     class_name = db.Column(db.String(100), nullable=False)
     class_display_id = db.Column(db.String(20))
-    encoding = db.Column(db.LargeBinary)
+    encoding = db.Column(db.LargeBinary)  # Store as bytes, not string
     enrolled = db.Column(db.Boolean, default=False)
 
 class Attendance(db.Model):
@@ -86,15 +86,29 @@ def load_known_faces():
     students = Student.query.filter(Student.encoding.isnot(None)).all()
     orb = cv2.ORB_create()
     for student in students:
-        img_data = base64.b64decode(student.encoding)
-        img = cv2.imdecode(np.frombuffer(img_data, np.uint8), cv2.IMREAD_GRAYSCALE)
-        kp, des = orb.detectAndCompute(img, None)
-        known_face_encodings.append(des)
-        known_face_student_ids.append(student.id)
+        try:
+            # Handle both bytes and string encodings for backward compatibility
+            encoding_data = student.encoding
+            if isinstance(encoding_data, str):
+                # If stored as string (old format), decode it
+                img_data = base64.b64decode(encoding_data)
+            else:
+                # If stored as bytes (new format), use directly
+                img_data = encoding_data
+            
+            img = cv2.imdecode(np.frombuffer(img_data, np.uint8), cv2.IMREAD_GRAYSCALE)
+            if img is not None:
+                kp, des = orb.detectAndCompute(img, None)
+                if des is not None:
+                    known_face_encodings.append(des)
+                    known_face_student_ids.append(student.id)
+        except Exception as e:
+            app.logger.warning(f"Could not load encoding for student {student.id}: {e}")
+            continue
     app.logger.info(f"Loaded {len(known_face_encodings)} face features.")
 
 # Create tables and load encodings on startup
-time.sleep(10)  # Delay for DB stability
+# Remove the time.sleep(10) as it can cause issues in production
 with app.app_context():
     try:
         db.create_all()
@@ -292,8 +306,6 @@ def edit_student(student_id):
 def enroll_face(student_id):
     student = Student.query.filter_by(id=student_id, class_name=current_user.class_name).first()
     if not student:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'status': 'error', 'message': 'Student not found or not in your class.'})
         flash('Student not found or not in your class.')
         return redirect(url_for('students'))
     
@@ -303,32 +315,24 @@ def enroll_face(student_id):
             image = base64.b64decode(image_data.split(',')[1])
             img = cv2.imdecode(np.frombuffer(image, np.uint8), cv2.IMREAD_COLOR)
             
-            # Detect face with OpenCV
             face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             faces = face_cascade.detectMultiScale(gray, 1.1, 4)
             
             if len(faces) > 0:
-                # Store the full image for feature matching
-                encoding_str = base64.b64encode(image).decode('utf-8')
-                student.encoding = encoding_str
+                # ✅ FIXED: Store bytes directly (NOT as UTF-8 string)
+                student.encoding = image
                 db.session.commit()
                 
                 load_known_faces()
-                
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'success', 'message': f'Face enrolled for {student.name}!'})
                 flash(f'Face enrolled for {student.name}!')
                 return redirect(url_for('students'))
             else:
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': 'No face detected. Try again.'})
                 flash('No face detected. Try again.')
         except Exception as e:
             app.logger.error(f"Error processing image: {e}")
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'status': 'error', 'message': 'Error processing image.'})
             flash('Error processing image.')
+    
     return render_template('enroll_face.html', student=student.name)
 
 @app.route('/mark_attendance_student', methods=['POST'])
