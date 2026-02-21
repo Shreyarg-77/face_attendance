@@ -8,9 +8,17 @@ import numpy as np
 import base64
 import os
 
+import os
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-this'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///attendance.db'
+
+# Use PostgreSQL on Railway, SQLite locally
+if os.environ.get('DATABASE_URL'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///attendance.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)

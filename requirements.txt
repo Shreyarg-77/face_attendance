@@ -6,3 +6,4 @@ opencv-python-headless==4.8.0.74
 numpy==1.26.2
 qrcode==7.4.2
 gunicorn==21.2.0
+psycopg2-binary==2.9.9
