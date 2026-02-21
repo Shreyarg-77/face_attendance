@@ -174,34 +174,42 @@ def capture_face(id):
     if student.class_name != current_user.class_name:
         return {'status': 'error', 'message': 'Access denied!'}
     
-    data = request.get_json()
-    image_data = data.get('image', '')
-    
     try:
+        data = request.get_json()
+        image_data = data.get('image', '')
+        
         header, encoded = image_data.split(',', 1)
         image_bytes = base64.b64decode(encoded)
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         
+        if img is None:
+            return {'status': 'error', 'message': 'Invalid image'}
+        
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         faces = face_cascade.detectMultiScale(gray, 1.1, 5)
         
-        if len(faces) > 0:
-            x, y, w, h = faces[0]
-            face_roi = gray[y:y+h, x:x+w]
-            orb = cv2.ORB_create()
-            kp, des = orb.detectAndCompute(face_roi, None)
-            
-            if des is not None:
-                student.encoding = des.tobytes()
-                student.enrolled = True
-                db.session.commit()
-                return {'status': 'success', 'message': 'Face enrolled successfully!'}
+        if len(faces) == 0:
+            return {'status': 'error', 'message': 'No face detected. Please position your face in the camera.'}
         
-        return {'status': 'error', 'message': 'No face detected. Try again!'}
+        x, y, w, h = faces[0]
+        face_roi = gray[y:y+h, x:x+w]
+        
+        # Resize to fixed size for consistency
+        face_roi = cv2.resize(face_roi, (100, 100))
+        
+        # Store as bytes
+        student.encoding = face_roi.tobytes()
+        student.enrolled = True
+        db.session.commit()
+        
+        return {'status': 'success', 'message': 'Face enrolled successfully!'}
+        
     except Exception as e:
+        app.logger.error(f"Face enrollment error: {e}")
         return {'status': 'error', 'message': str(e)}
+    
 
 @app.route('/delete_student/<int:id>', methods=['POST'])
 @login_required
@@ -309,25 +317,23 @@ def mark_attendance_student():
         
         x, y, w, h = faces[0]
         face_roi = gray[y:y+h, x:x+w]
+        face_roi = cv2.resize(face_roi, (100, 100))
         
-        orb = cv2.ORB_create()
-        kp, des = orb.detectAndCompute(face_roi, None)
-        
-        if des is None:
-            return {'status': 'error', 'message': 'Face features not clear'}
-        
+        # Get all enrolled students
         students = Student.query.filter(Student.enrolled == True).all()
+        
         best_match = None
         best_score = 0
         
         for student in students:
             if student.encoding:
-                known_des = np.frombuffer(student.encoding, np.float64)
-                bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-                matches = bf.match(des, known_des)
-                score = len(matches)
+                known_face = np.frombuffer(student.encoding, dtype=np.uint8).reshape(100, 100)
                 
-                if score > best_score and score > 15:
+                # Simple comparison using template matching
+                result = cv2.matchTemplate(face_roi, known_face, cv2.TM_CCOEFF_NORMED)
+                score = result[0][0]
+                
+                if score > best_score and score > 0.5:
                     best_score = score
                     best_match = student
         
@@ -347,6 +353,7 @@ def mark_attendance_student():
         return {'status': 'success', 'message': f'Attendance marked for {best_match.name}!'}
     
     except Exception as e:
+        app.logger.error(f"Attendance error: {e}")
         return {'status': 'error', 'message': str(e)}
 
 @app.route('/blacklist')
