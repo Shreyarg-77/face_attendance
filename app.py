@@ -112,25 +112,34 @@ with app.app_context():
 def welcome():
     return render_template('welcome.html')
 
-@app.route('/register_admin', methods=['GET', 'POST'])
-def register_admin():
+@app.route('/register', methods=['GET', 'POST'])
+def register():
     if request.method == 'POST':
         username = request.form['username']
         password = generate_password_hash(request.form['password'])
         class_name = request.form['class_name']
         email = request.form['email']
-        new_id = db.session.query(db.func.max(Admin.id)).scalar() or 0 + 1
-        new_admin = Admin(id=new_id, username=username, password=password, class_name=class_name, email=email)
-        try:
-            db.session.add(new_admin)
-            db.session.commit()
-            flash('Admin registered successfully!')
-            return redirect(url_for('login'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Registration error: {e}')
-    return render_template('register_admin.html')
-
+        
+        # Check if username exists
+        existing_admin = Admin.query.filter_by(username=username).first()
+        if existing_admin:
+            flash('Username already exists!', 'danger')
+            return redirect(url_for('register'))
+        
+        # Create new admin WITHOUT manual id
+        new_admin = Admin(
+            username=username,
+            password=password,
+            class_name=class_name,
+            email=email
+        )
+        db.session.add(new_admin)
+        db.session.commit()
+        
+        flash('Registration successful! Please login.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('register.html')
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
