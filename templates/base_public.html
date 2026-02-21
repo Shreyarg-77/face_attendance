@@ -7,186 +7,173 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            background-color: #e9ecef;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px;
-        }
-        
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background: linear-gradient(135deg, #f1f3f5, #dee2e6);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        padding: 20px;
+    }
+
+    /* Main Card */
+    .auth-container {
+        background: #ffffff;
+        border-radius: 18px;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15);
+        width: 100%;
+        max-width: 520px;   /* Better for laptops */
+        overflow: hidden;
+    }
+
+    /* Header */
+    .auth-header {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        color: #fff;
+        padding: 40px 30px;
+        text-align: center;
+    }
+
+    .auth-header h3 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .auth-header p {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    /* Body */
+    .auth-body {
+        padding: 35px 30px;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 6px;
+        font-size: 0.95rem;
+    }
+
+    /* INPUT FIELDS – Bigger & Standard */
+    .form-control {
+        height: 48px;
+        border-radius: 10px;
+        padding: 10px 15px;
+        border: 1.6px solid #ced4da;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        margin-bottom: 20px;
+    }
+
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.2);
+    }
+
+    .form-control::placeholder {
+        color: #adb5bd;
+    }
+
+    /* Buttons */
+    .btn-primary {
+        background: #0d6efd;
+        border: none;
+        border-radius: 10px;
+        height: 48px;
+        font-size: 1rem;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+    }
+
+    .btn-primary:hover {
+        background: #0b5ed7;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(13, 110, 253, 0.35);
+    }
+
+    .btn-outline-primary {
+        border-radius: 10px;
+        height: 48px;
+        font-size: 1rem;
+        font-weight: 600;
+        width: 100%;
+        margin-top: 12px;
+    }
+
+    /* Alerts */
+    .alert {
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 20px;
+        font-size: 0.95rem;
+    }
+
+    /* Footer */
+    .auth-footer {
+        text-align: center;
+        padding: 0 30px 25px;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    /* Icons */
+    .welcome-icon {
+        font-size: 3.8rem;
+        margin-bottom: 12px;
+    }
+
+    .welcome-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+
+    .welcome-subtitle {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    /* MOBILE OPTIMIZATION */
+    @media (max-width: 576px) {
         .auth-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-            overflow: hidden;
-            width: 100%;
-            max-width: 480px;
+            max-width: 100%;
         }
-        
+
         .auth-header {
-            background: #0d6efd;
-            color: white;
-            padding: 35px 25px;
-            text-align: center;
+            padding: 30px 20px;
         }
-        
+
         .auth-header h3 {
-            font-size: 1.6rem;
-            font-weight: 700;
-            margin-bottom: 8px;
+            font-size: 1.45rem;
         }
-        
-        .auth-header p {
-            font-size: 0.95rem;
-            opacity: 0.9;
-        }
-        
+
         .auth-body {
-            padding: 30px 25px;
+            padding: 25px 20px;
         }
-        
-        .form-label {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 6px;
-            font-size: 0.9rem;
-        }
-        
-        .form-control {
-            border-radius: 8px;
-            padding: 12px 15px;
-            border: 1.5px solid #ced4da;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            margin-bottom: 18px;
-        }
-        
-        .form-control:focus {
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
-        }
-        
-        .form-control::placeholder {
-            color: #adb5bd;
-        }
-        
-        .btn-primary {
-            background: #0d6efd;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 24px;
-            font-size: 1rem;
-            font-weight: 600;
-            width: 100%;
-            transition: all 0.3s ease;
-            margin-top: 8px;
-        }
-        
-        .btn-primary:hover {
-            background: #0b5ed7;
-            transform: translateY(-1px);
-            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
-        }
-        
+
+        .form-control,
+        .btn-primary,
         .btn-outline-primary {
-            color: #0d6efd;
-            border: 2px solid #0d6efd;
-            border-radius: 8px;
-            padding: 10px 24px;
-            font-size: 1rem;
-            font-weight: 600;
-            width: 100%;
-            margin-top: 10px;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-outline-primary:hover {
-            background: #0d6efd;
-            color: white;
-        }
-        
-        .auth-footer {
-            text-align: center;
-            padding: 0 25px 25px;
-            color: #6c757d;
-            font-size: 0.85rem;
-        }
-        
-        .auth-footer a {
-            color: #0d6efd;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        
-        .auth-footer a:hover {
-            text-decoration: underline;
-        }
-        
-        .alert {
-            border-radius: 8px;
-            padding: 12px 15px;
-            margin-bottom: 18px;
-            font-size: 0.9rem;
-        }
-        
-        .welcome-icon {
-            font-size: 3.5rem;
-            margin-bottom: 10px;
-        }
-        
-        .welcome-title {
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        
-        .welcome-subtitle {
+            height: 46px;
             font-size: 0.95rem;
-            opacity: 0.9;
         }
-        
-        .btn-container {
-            margin-top: 18px;
+
+        .welcome-icon {
+            font-size: 3rem;
         }
-        
-        .mobile-center {
-            text-align: center;
-        }
-        
-        /* Mobile optimizations */
-        @media (max-width: 576px) {
-            .auth-body {
-                padding: 25px 20px;
-            }
-            
-            .auth-header {
-                padding: 28px 20px;
-            }
-            
-            .auth-header h3 {
-                font-size: 1.4rem;
-            }
-            
-            .welcome-icon {
-                font-size: 2.8rem;
-            }
-            
-            .form-control {
-                padding: 11px 14px;
-                font-size: 0.95rem;
-            }
-            
-            .btn-primary, .btn-outline-primary {
-                padding: 11px 20px;
-                font-size: 0.95rem;
-            }
-        }
-    </style>
+    }
+</style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
