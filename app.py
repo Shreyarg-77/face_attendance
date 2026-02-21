@@ -568,7 +568,6 @@ def migrate_database():
         """)).fetchone()
         
         if not result:
-            # Add the column
             db.session.execute(db.text("ALTER TABLE student ADD COLUMN enrolled BOOLEAN DEFAULT FALSE"))
             db.session.commit()
             print("✅ Added 'enrolled' column to student table")
@@ -588,15 +587,10 @@ def migrate_database():
         print(f"Migration error: {e}")
         db.session.rollback()
 
-# Call migration before starting app
-with app.app_context():
-    db.create_all()
-    migrate_database()
 
-    
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        migrate_database()
         print("✅ Database initialized!")
     app.run(debug=True)
-   
