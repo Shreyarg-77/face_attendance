@@ -123,6 +123,7 @@ def dashboard():
                          kiosk_active=kiosk_active,
                          kiosk_admin=kiosk_admin)
 
+
 @app.route('/students', methods=['GET', 'POST'])
 @login_required
 def students():
@@ -143,6 +144,10 @@ def students():
         return redirect(url_for('enroll_face', id=new_student.id))
     
     students_list = Student.query.filter_by(class_name=current_user.class_name).all()
+    # Add enrolled status to each student object
+    for s in students_list:
+        s.enrolled_status = 'Enrolled' if s.enrolled else 'Not Enrolled'
+    
     return render_template('students.html', students=students_list)
 
 @app.route('/enroll_face/<int:id>')

@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
-{% block title %}Enroll Face - {{ student_name }} - Attendance System{% endblock %}
+{% block title %}Enroll Face - {{ student.name }} - Attendance System{% endblock %}
 {% block content %}
 <div class="text-center">
-    <h3 class="mb-4"><i class="fas fa-camera"></i> Enroll Face for {{ student_name }}</h3>
+    <h3 class="mb-4"><i class="fas fa-camera"></i> Enroll Face for {{ student.name }}</h3>
     <p class="text-muted mb-4">Position your face in the camera and click "Capture" to enroll.</p>
     
     <div class="card mb-4">
@@ -25,7 +25,6 @@
     const statusEl = document.getElementById('status');
     let stream = null;
     
-    // Start camera on page load
     async function startCamera() {
         try {
             stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -33,14 +32,13 @@
             statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Camera active. Click "Capture" to enroll.';
         } catch (err) {
             console.error('Camera error:', err);
-            statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Camera access denied or not supported. Please allow camera permissions and refresh.';
+            statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Camera access denied.';
         }
     }
     
-    // Capture face and send to server
     function captureFace() {
         if (!stream) {
-            alert('Camera not active. Please allow permissions.');
+            alert('Camera not active.');
             return;
         }
         
@@ -50,11 +48,11 @@
         
         statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
         
-        // Correctly create FormData
         const formData = new FormData();
         formData.append('image', image);
         
-        fetch(window.location.href, {
+        // FIX: Post to /capture_face/{{ student.id }} not window.location.href
+        fetch('/capture_face/{{ student.id }}', {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: formData
@@ -68,18 +66,16 @@
         })
         .catch(err => {
             console.error('Error:', err);
-            statusEl.innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i> Error enrolling face. Check console for details.';
+            statusEl.innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i> Error enrolling face.';
         });
     }
     
-    // Stop camera on page unload
     window.addEventListener('beforeunload', () => {
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
         }
     });
     
-    // Initialize
     startCamera();
 </script>
 {% endblock %}
