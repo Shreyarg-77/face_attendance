@@ -277,12 +277,22 @@ def export_attendance_csv():
     
     records = query.all()
     
-    csv_data = 'ID,Name,Date,Time\n'
+    # Get class name
+    class_name = current_user.class_name
+    
+    # Create CSV with class name in heading
+    csv_data = f'Attendance Report\n'
+    csv_data += f'Class: {class_name}\n'
+    csv_data += f'Date: {date_filter if date_filter else "All Dates"}\n'
+    csv_data += f'Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n\n'
+    csv_data += 'Student ID,Name,Date,Time\n'
+    
     for r in records:
         student = Student.query.get(r.student_id)
         csv_data += f'{student.class_display_id},{student.name},{r.date},{r.time}\n'
     
-    return Response(csv_data, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=attendance.csv'})
+    filename = f'attendance_{class_name}.csv'
+    return Response(csv_data, mimetype='text/csv', headers={'Content-Disposition': f'attachment;filename={filename}'})
 
 @app.route('/kiosk_status', methods=['GET', 'POST', 'DELETE'])
 @login_required
