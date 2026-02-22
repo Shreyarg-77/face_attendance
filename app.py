@@ -360,8 +360,9 @@ def mark_attendance_student():
         if not best_match:
             return {'status': 'error', 'message': 'Face not recognized'}
         
-        today = datetime.now().strftime('%Y-%m-%d')
-        time_now = datetime.now().strftime('%H:%M:%S')
+        now = datetime.now()
+        today = now.strftime('%Y-%m-%d')
+        time_now = now.strftime('%H:%M:%S')
         
         if Attendance.query.filter_by(student_id=best_match.id, date=today).first():
             return {'status': 'info', 'message': 'Already marked today'}
