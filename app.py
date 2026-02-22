@@ -7,8 +7,8 @@ import cv2
 import numpy as np
 import base64
 import os
-
-import os
+from datetime import datetime
+import pytz
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-this'
@@ -360,10 +360,16 @@ def mark_attendance_student():
         if not best_match:
             return {'status': 'error', 'message': 'Face not recognized'}
         
-        now = datetime.now()
+        
+
+        # Set timezone to IST (Indian Standard Time)
+        IST = pytz.timezone('Asia/Kolkata')
+
+        # When marking attendance - use IST
+        now = datetime.now(IST)
         today = now.strftime('%Y-%m-%d')
         time_now = now.strftime('%H:%M:%S')
-        
+                
         if Attendance.query.filter_by(student_id=best_match.id, date=today).first():
             return {'status': 'info', 'message': 'Already marked today'}
         
