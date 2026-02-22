@@ -44,7 +44,6 @@
             <thead>
                 <tr>
                     <th><i class="fas fa-id-badge"></i> ID</th>
-                    <th><i class="fas fa-user-tag"></i> Student ID</th>
                     <th><i class="fas fa-user"></i> Name</th>
                     <th><i class="fas fa-calendar"></i> Date</th>
                     <th><i class="fas fa-clock"></i> Time</th>
@@ -53,8 +52,7 @@
             <tbody>
                 {% for record in records %}
                 <tr>
-                    <td>{{ record.id }}</td>
-                    <td>{{ record.student_id }}</td>
+                    <td>{{ record.student.class_display_id }}</td>
                     <td>{{ record.student.name }}</td>
                     <td>{{ record.date }}</td>
                     <td>{{ record.time }}</td>
