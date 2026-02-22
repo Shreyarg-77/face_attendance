@@ -212,6 +212,21 @@ def capture_face(id):
         app.logger.error(f"Face enrollment error: {e}")
         return {'status': 'error', 'message': str(e)}
     
+@app.route('/edit_student/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_student(id):
+    student = Student.query.get_or_404(id)
+    if student.class_name != current_user.class_name:
+        flash('Access denied!', 'danger')
+        return redirect(url_for('students'))
+    
+    if request.method == 'POST':
+        student.name = request.form['name']
+        db.session.commit()
+        flash('Student updated!', 'success')
+        return redirect(url_for('students'))
+    
+    return render_template('edit_student.html', student=student)
 
 @app.route('/delete_student/<int:id>', methods=['POST'])
 @login_required

@@ -1,20 +1,29 @@
 {% extends 'base.html' %}
-
+{% block title %}Edit Student - Attendance System{% endblock %}
 {% block content %}
-<div class="container mt-5">
-    <h2 class="text-center mb-4">Edit Student</h2>
-    
-    <form method="POST" class="mb-4">
-        <div class="mb-3">
-            <label for="name" class="form-label">Student Name</label>
-            <input type="text" name="name" id="name" class="form-control" value="{{ student.name }}" required>
+<div class="row justify-content-center">
+    <div class="col-md-6 col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-edit"></i> Edit Student</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Student ID</label>
+                        <input type="text" class="form-control" value="{{ student.class_display_id }}" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" name="name" class="form-control" id="name" value="{{ student.name }}" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <a href="{{ url_for('students') }}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
         </div>
-        <div class="mb-3">
-            <label for="class_name" class="form-label">Class Name</label>
-            <input type="text" name="class_name" id="class_name" class="form-control" value="{{ student.class_name }}" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Update Student</button>
-        <a href="{{ url_for('students') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Cancel</a>
-    </form>
+    </div>
 </div>
 {% endblock %}
