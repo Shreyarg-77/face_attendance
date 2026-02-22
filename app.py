@@ -34,6 +34,15 @@ class Admin(UserMixin, db.Model):
     class_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100))
 
+class Attendance(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    date = db.Column(db.String(20), nullable=False)
+    time = db.Column(db.String(20), nullable=False)
+    
+    # Add relationship
+    student = db.relationship('Student', backref='attendance_records')
+
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -41,12 +50,6 @@ class Student(db.Model):
     class_display_id = db.Column(db.String(20))
     encoding = db.Column(db.LargeBinary)
     enrolled = db.Column(db.Boolean, default=False)
-
-class Attendance(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
-    date = db.Column(db.String(20), nullable=False)
-    time = db.Column(db.String(20), nullable=False)
 
 class KioskStatus(db.Model):
     id = db.Column(db.Integer, primary_key=True)
