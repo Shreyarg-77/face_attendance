@@ -255,16 +255,35 @@ def attendance():
     date_filter = request.args.get('date', '')
     search = request.args.get('search', '')
     
-    query = Attendance.query.join(Student).filter(Student.class_name == current_user.class_name)
+    # Get students for current admin's class
+    students = Student.query.filter_by(class_name=current_user.class_name).all()
+    student_ids = [s.id for s in students]
     
-    if date_filter:
-        query = query.filter(Attendance.date == date_filter)
+    # Default to today's date if no filter
+    if not date_filter:
+        date_filter = datetime.now().strftime('%Y-%m-%d')
+    
+    # Query attendance for these students
+    query = Attendance.query.filter(
+        Attendance.student_id.in_(student_ids),
+        Attendance.date == date_filter
+    )
     
     if search:
-        query = query.filter(Student.name.ilike(f'%{search}%'))
+        query = query.filter(Attendance.student_id.in_(
+            [s.id for s in students if search.lower() in s.name.lower()]
+        ))
     
     records = query.order_by(Attendance.id.desc()).all()
-    return render_template('attendance.html', records=records)
+    
+    # Add student info to each record
+    for r in records:
+        student = Student.query.get(r.student_id)
+        r.student_name = student.name
+        r.student_display_id = student.class_display_id
+    
+    return render_template('attendance.html', records=records, current_date=date_filter)
+
 
 @app.route('/export_attendance_csv')
 @login_required
@@ -499,6 +518,7 @@ def test_login():
         <button type="submit">Test Login</button>
     </form>
     '''
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
