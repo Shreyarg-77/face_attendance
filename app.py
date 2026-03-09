@@ -295,7 +295,7 @@ def attendance():
 @app.route('/export_attendance_csv')
 @login_required
 def export_attendance_csv():
-    # Get filters from URL (same as attendance page)
+    # Get filters from URL
     date_filter = request.args.get('date', '')
     search = request.args.get('search', '')
     
@@ -346,8 +346,8 @@ def export_attendance_csv():
     
     for r in records:
         student = Student.query.get(r.student_id)
-        # Format date with quotes to prevent Excel hash issue
-        csv_data += f'{student.class_display_id},{student.name},"{r.date}","{r.time}"\n'
+        # CHANGE THIS LINE - Add = prefix to prevent Excel hash issue
+        csv_data += f'{student.class_display_id},{student.name},"={r.date}","={r.time}"\n'
     
     # Generate filename based on date filter
     if date_filter:
