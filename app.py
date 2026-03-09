@@ -264,11 +264,19 @@ def attendance():
         date_filter = datetime.now().strftime('%Y-%m-%d')
     
     # Query attendance for these students
-    query = Attendance.query.filter(
-        Attendance.student_id.in_(student_ids),
-        Attendance.date == date_filter
-    )
+    query = Attendance.query.filter(Attendance.student_id.in_(student_ids))
     
+    # If date is specified, filter by that date
+    if date_filter:
+        query = query.filter(Attendance.date == date_filter)
+    else:
+        # If no date specified but search is used, show last 30 days
+        if search:
+            # Calculate date 30 days ago
+            thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+            query = query.filter(Attendance.date >= thirty_days_ago)
+    
+    # Add name search filter
     if search:
         query = query.filter(Attendance.student_id.in_(
             [s.id for s in students if search.lower() in s.name.lower()]
@@ -284,38 +292,73 @@ def attendance():
     
     return render_template('attendance.html', records=records, current_date=date_filter)
 
-
 @app.route('/export_attendance_csv')
 @login_required
 def export_attendance_csv():
+    # Get filters from URL (same as attendance page)
     date_filter = request.args.get('date', '')
     search = request.args.get('search', '')
     
-    query = Attendance.query.join(Student).filter(Student.class_name == current_user.class_name)
+    # Get students for current admin's class
+    students = Student.query.filter_by(class_name=current_user.class_name).all()
+    student_ids = [s.id for s in students]
     
+    # Default to today's date if no filter
+    if not date_filter:
+        date_filter = datetime.now().strftime('%Y-%m-%d')
+    
+    # Query attendance with filters
+    query = Attendance.query.filter(Attendance.student_id.in_(student_ids))
+    
+    # If date is specified, filter by that date
     if date_filter:
         query = query.filter(Attendance.date == date_filter)
+    else:
+        # If no date specified but search is used, show last 30 days
+        if search:
+            # Calculate date 30 days ago
+            thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+            query = query.filter(Attendance.date >= thirty_days_ago)
+    
+    # Add name search filter
     if search:
-        query = query.filter(Student.name.ilike(f'%{search}%'))
+        query = query.filter(Attendance.student_id.in_(
+            [s.id for s in students if search.lower() in s.name.lower()]
+        ))
     
     records = query.all()
     
     # Get class name
     class_name = current_user.class_name
     
-    # Create CSV with class name in heading
+    # Create CSV with proper formatting
     csv_data = f'Attendance Report\n'
     csv_data += f'Class: {class_name}\n'
-    csv_data += f'Date: {date_filter if date_filter else "All Dates"}\n'
+    if date_filter:
+        csv_data += f'Date: {date_filter}\n'
+    elif search:
+        csv_data += f'Date: Last 30 Days\n'
+    else:
+        csv_data += f'Date: Today\n'
+    
     csv_data += f'Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n\n'
     csv_data += 'Student ID,Name,Date,Time\n'
     
     for r in records:
         student = Student.query.get(r.student_id)
-        csv_data += f'{student.class_display_id},{student.name},{r.date},{r.time}\n'
+        # Format date with quotes to prevent Excel hash issue
+        csv_data += f'{student.class_display_id},{student.name},"{r.date}","{r.time}"\n'
     
-    filename = f'attendance_{class_name}.csv'
+    # Generate filename based on date filter
+    if date_filter:
+        filename = f'attendance_{class_name}_{date_filter}.csv'
+    elif search:
+        filename = f'attendance_{class_name}_last30days.csv'
+    else:
+        filename = f'attendance_{class_name}_today.csv'
+    
     return Response(csv_data, mimetype='text/csv', headers={'Content-Disposition': f'attachment;filename={filename}'})
+
 
 @app.route('/kiosk_status', methods=['GET', 'POST', 'DELETE'])
 @login_required
