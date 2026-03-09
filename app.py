@@ -316,7 +316,6 @@ def export_attendance_csv():
     else:
         # If no date specified but search is used, show last 30 days
         if search:
-            # Calculate date 30 days ago
             thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
             query = query.filter(Attendance.date >= thirty_days_ago)
     
@@ -332,7 +331,8 @@ def export_attendance_csv():
     class_name = current_user.class_name
     
     # Create CSV with proper formatting
-    csv_data = f'Attendance Report\n'
+    csv_data = '\ufeff'  # UTF-8 BOM for Excel
+    csv_data += f'Attendance Report\n'
     csv_data += f'Class: {class_name}\n'
     if date_filter:
         csv_data += f'Date: {date_filter}\n'
@@ -357,7 +357,8 @@ def export_attendance_csv():
     else:
         filename = f'attendance_{class_name}_today.csv'
     
-    return Response(csv_data, mimetype='text/csv', headers={'Content-Disposition': f'attachment;filename={filename}'})
+    return Response(csv_data, mimetype='text/csv; charset=utf-8', 
+                    headers={'Content-Disposition': f'attachment;filename={filename}'})
 
 
 @app.route('/kiosk_status', methods=['GET', 'POST', 'DELETE'])
