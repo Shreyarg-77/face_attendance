@@ -58,7 +58,7 @@ class KioskStatus(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return Admin.query.get(int(user_id))
+    return db.session.get(Admin, int(user_id))
 
 # Routes
 @app.route('/')
@@ -290,7 +290,7 @@ def attendance():
     
     # Add student info to each record
     for r in records:
-        student = Student.query.get(r.student_id)
+        student = db.session.get(Student, r.student_id)
         r.student_name = student.name
         r.student_display_id = student.class_display_id
     
