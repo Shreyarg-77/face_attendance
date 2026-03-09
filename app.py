@@ -254,7 +254,7 @@ def delete_student(id):
 def attendance():
     date_filter = request.args.get('date', '')
     search = request.args.get('search', '')
-    view_type = request.args.get('view', 'today')  # Get view type
+    view_type = request.args.get('view', 'today')
     
     # Get students for current admin's class
     students = Student.query.filter_by(class_name=current_user.class_name).all()
@@ -274,8 +274,6 @@ def attendance():
     elif view_type == 'date':
         # Show specific date
         if date_filter:
-            query = query.filter(Attendance.date == date_filter)
-        else:
             query = query.filter(Attendance.date == date_filter)
     elif view_type == 'history':
         # Show last 30 days
