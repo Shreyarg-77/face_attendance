@@ -254,6 +254,7 @@ def delete_student(id):
 def attendance():
     date_filter = request.args.get('date', '')
     search = request.args.get('search', '')
+    view_type = request.args.get('view', 'today')  # Get view type
     
     # Get students for current admin's class
     students = Student.query.filter_by(class_name=current_user.class_name).all()
@@ -266,15 +267,20 @@ def attendance():
     # Query attendance for these students
     query = Attendance.query.filter(Attendance.student_id.in_(student_ids))
     
-    # If date is specified, filter by that date
-    if date_filter:
+    # Handle different view types
+    if view_type == 'today':
+        # Show today's attendance
         query = query.filter(Attendance.date == date_filter)
-    else:
-        # If no date specified but search is used, show last 30 days
-        if search:
-            # Calculate date 30 days ago
-            thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-            query = query.filter(Attendance.date >= thirty_days_ago)
+    elif view_type == 'date':
+        # Show specific date
+        if date_filter:
+            query = query.filter(Attendance.date == date_filter)
+        else:
+            query = query.filter(Attendance.date == date_filter)
+    elif view_type == 'history':
+        # Show last 30 days
+        thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        query = query.filter(Attendance.date >= thirty_days_ago)
     
     # Add name search filter
     if search:
@@ -298,6 +304,7 @@ def export_attendance_csv():
     # Get filters from URL
     date_filter = request.args.get('date', '')
     search = request.args.get('search', '')
+    view_type = request.args.get('view', 'today')  # Get view type
     
     # Get students for current admin's class
     students = Student.query.filter_by(class_name=current_user.class_name).all()
@@ -310,14 +317,16 @@ def export_attendance_csv():
     # Query attendance with filters
     query = Attendance.query.filter(Attendance.student_id.in_(student_ids))
     
-    # If date is specified, filter by that date
-    if date_filter:
+    # Handle different view types
+    if view_type == 'today':
         query = query.filter(Attendance.date == date_filter)
-    else:
-        # If no date specified but search is used, show last 30 days
-        if search:
-            thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-            query = query.filter(Attendance.date >= thirty_days_ago)
+    elif view_type == 'date':
+        if date_filter:
+            query = query.filter(Attendance.date == date_filter)
+    elif view_type == 'history':
+        # Show last 30 days
+        thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        query = query.filter(Attendance.date >= thirty_days_ago)
     
     # Add name search filter
     if search:
@@ -334,28 +343,28 @@ def export_attendance_csv():
     csv_data = '\ufeff'  # UTF-8 BOM for Excel
     csv_data += f'Attendance Report\n'
     csv_data += f'Class: {class_name}\n'
-    if date_filter:
-        csv_data += f'Date: {date_filter}\n'
-    elif search:
-        csv_data += f'Date: Last 30 Days\n'
-    else:
+    if view_type == 'today':
         csv_data += f'Date: Today\n'
+    elif view_type == 'date':
+        csv_data += f'Date: {date_filter}\n'
+    elif view_type == 'history':
+        csv_data += f'Date: Last 30 Days\n'
     
     csv_data += f'Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n\n'
     csv_data += 'Student ID,Name,Date,Time\n'
     
     for r in records:
         student = Student.query.get(r.student_id)
-        # Use TEXT function to force Excel to treat as text
-        csv_data += f'{student.class_display_id},{student.name},"{r.date}","{r.time}"\n'
+        # Use single quote to force Excel to treat as text
+        csv_data += f'{student.class_display_id},{student.name},"\'{r.date}","\'{r.time}"\n'
     
-    # Generate filename based on date filter
-    if date_filter:
-        filename = f'attendance_{class_name}_{date_filter}.csv'
-    elif search:
-        filename = f'attendance_{class_name}_last30days.csv'
-    else:
+    # Generate filename based on view type
+    if view_type == 'today':
         filename = f'attendance_{class_name}_today.csv'
+    elif view_type == 'date':
+        filename = f'attendance_{class_name}_{date_filter}.csv'
+    elif view_type == 'history':
+        filename = f'attendance_{class_name}_last30days.csv'
     
     return Response(csv_data, mimetype='text/csv; charset=utf-8', 
                     headers={'Content-Disposition': f'attachment;filename={filename}'})
