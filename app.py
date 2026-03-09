@@ -346,8 +346,8 @@ def export_attendance_csv():
     
     for r in records:
         student = Student.query.get(r.student_id)
-        # CHANGE THIS LINE - Add = prefix to prevent Excel hash issue
-        csv_data += f'{student.class_display_id},{student.name},"={r.date}","={r.time}"\n'
+        # Use TEXT function to force Excel to treat as text
+        csv_data += f'{student.class_display_id},{student.name},"{r.date}","{r.time}"\n'
     
     # Generate filename based on date filter
     if date_filter:
@@ -359,7 +359,6 @@ def export_attendance_csv():
     
     return Response(csv_data, mimetype='text/csv; charset=utf-8', 
                     headers={'Content-Disposition': f'attachment;filename={filename}'})
-
 
 @app.route('/kiosk_status', methods=['GET', 'POST', 'DELETE'])
 @login_required
